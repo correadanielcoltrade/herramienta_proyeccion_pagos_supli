@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template
+﻿from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import os
 
@@ -26,6 +26,19 @@ def create_app():
     @app.route('/')
     def index():
         return render_template('index.html')
+
+    @app.route('/admin/db-migrate', methods=['POST'])
+    def db_migrate():
+        secret = request.headers.get('X-Migrate-Secret', '')
+        expected = os.getenv('MIGRATE_SECRET', '')
+        if not expected or secret != expected:
+            return jsonify({'error': 'Unauthorized'}), 401
+        from blueprint.storage import migrate_old_tables_to_new
+        try:
+            summary = migrate_old_tables_to_new()
+            return jsonify({'ok': True, 'summary': summary}), 200
+        except Exception as exc:
+            return jsonify({'ok': False, 'error': str(exc)}), 500
 
     return app
 

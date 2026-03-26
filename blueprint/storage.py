@@ -285,6 +285,72 @@ def migrate_json_to_db():
     return summary
 
 
+def migrate_old_tables_to_new():
+    """Migra datos de tablas antiguas (proyeccionpagossupli_pp_*) a las correctas
+    (proyeccionpagossupli_*) y elimina las tablas antiguas."""
+    if not _db_enabled():
+        raise RuntimeError('DB config missing.')
+
+    prefix = _db_table_prefix()
+    # Nombres de tablas viejas (con el prefijo + pp_ duplicado)
+    old_names = {
+        'pp_users':     f'{prefix}pp_users',
+        'pp_payments':  f'{prefix}pp_payments',
+        'pp_providers': f'{prefix}pp_providers',
+        'pp_products':  f'{prefix}pp_products',
+        'pp_brands':    f'{prefix}pp_brands',
+        'pp_logs':      f'{prefix}pp_logs',
+    }
+
+    summary = {}
+    conn = _db_connect()
+    try:
+        for file_key, old_table in old_names.items():
+            new_table = f'{prefix}{DB_TABLES[file_key]}'
+            result = {'old_table': old_table, 'new_table': new_table,
+                      'old_records': 0, 'migrated': 0, 'dropped_old': False}
+
+            with conn.cursor() as cur:
+                cur.execute('SELECT to_regclass(%s)', (old_table,))
+                old_exists = cur.fetchone()[0] is not None
+
+            if old_exists:
+                with conn.cursor() as cur:
+                    cur.execute(f'SELECT COUNT(*) FROM {old_table}')
+                    result['old_records'] = cur.fetchone()[0]
+
+            _ensure_table(conn, new_table)
+
+            with conn.cursor() as cur:
+                cur.execute(f'SELECT COUNT(*) FROM {new_table}')
+                new_count = cur.fetchone()[0]
+
+            # Solo copia si la tabla vieja tiene datos y la nueva está vacía
+            if old_exists and result['old_records'] > 0 and new_count == 0:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f'INSERT INTO {new_table} (id, created_at, updated_at, data_json) '
+                        f'SELECT id, created_at, updated_at, data_json FROM {old_table}'
+                    )
+                    result['migrated'] = cur.rowcount
+                conn.commit()
+
+            # Elimina tabla vieja si existe
+            if old_exists:
+                with conn.cursor() as cur:
+                    cur.execute(f'DROP TABLE IF EXISTS {old_table}')
+                conn.commit()
+                result['dropped_old'] = True
+
+            # Limpia caché de resolución de tablas
+            _TABLE_RESOLUTION.pop(file_key, None)
+            summary[file_key] = result
+    finally:
+        conn.close()
+
+    return summary
+
+
 def next_id(records):
     if not records:
         return 1

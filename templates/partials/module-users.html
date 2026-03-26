@@ -1,0 +1,55 @@
+<section class="panel module" id="module-users" data-admin-only="true">
+  <div class="module-header">
+    <h3>Administración de usuarios</h3>
+    <div class="header-actions">
+      <input type="search" id="users-search" class="table-search" placeholder="Buscar usuario">
+      <button class="btn ghost" id="users-refresh">Actualizar</button>
+    </div>
+  </div>
+
+  <div class="catalog-grid">
+    <div class="panel soft">
+      <h4>Crear usuario</h4>
+      <form id="user-form" class="form compact">
+        <label>Nombre
+          <input type="text" name="name" placeholder="Nombre completo">
+        </label>
+        <label>Email
+          <input type="email" name="email" required>
+        </label>
+        <label>Password
+          <input type="password" name="password" required>
+        </label>
+        <label>Rol
+          <select name="role">
+            <option value="USER">Usuario</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+        <button type="submit" class="btn primary">Crear usuario</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="table-header">
+        <h4>Usuarios existentes</h4>
+      </div>
+      <div class="table-wrapper compact">
+        <table id="users-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Creado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="table-footer" data-table="users-table"></div>
+    </div>
+  </div>
+</section>

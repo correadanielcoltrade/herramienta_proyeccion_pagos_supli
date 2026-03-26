@@ -1,0 +1,37 @@
+<section class="panel module" id="module-products">
+  <div class="module-header">
+    <h3>Productos</h3>
+    <div class="header-actions catalog-header-actions">
+      <div class="catalog-search">
+        <input type="search" id="products-search" class="table-search" placeholder="Buscar producto">
+      </div>
+      <div class="catalog-buttons">
+        <button class="btn primary" id="product-open">Nuevo producto</button>
+        <button class="btn danger" id="product-bulk-delete" disabled>Eliminar seleccionados</button>
+      </div>
+    </div>
+  </div>
+  <div class="inline-actions">
+    <button class="btn outline small" id="product-template">Template Excel</button>
+    <form id="product-upload-form" class="inline-form">
+      <input type="file" name="file" accept=".xlsx">
+      <button type="submit" class="btn secondary small">Importar</button>
+    </form>
+  </div>
+  <div class="table-wrapper compact">
+    <table id="products-table">
+      <thead>
+        <tr>
+          <th class="catalog-select-col"><input type="checkbox" id="product-select-all"></th>
+          <th>SKU</th>
+          <th>Descripcion</th>
+          <th>Marca</th>
+          <th>Categoria</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="table-footer" data-table="products-table"></div>
+</section>

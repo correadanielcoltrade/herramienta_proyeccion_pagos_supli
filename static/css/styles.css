@@ -1,0 +1,256 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Sora:wght@400;600&display=swap');
+
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-soft: #f0efe9;
+  --ink: #1f1f1f;
+  --muted: #6d6a63;
+  --accent: #0f6b5f;
+  --accent-2: #d9a441;
+  --danger: #b23a48;
+  --warning: #d38c1a;
+  --success: #2f8f5b;
+  --shadow: 0 18px 45px rgba(31, 31, 31, 0.12);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+  background: radial-gradient(circle at top left, #fefaf1 0%, #f6f4ef 40%, #ece8df 100%);
+  color: var(--ink);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 4vw 12px;
+  gap: 16px;
+}
+
+.brand h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  margin: 0 0 6px;
+}
+
+.brand p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.module-nav {
+  display: flex;
+  gap: 12px;
+  padding: 0 4vw 10px;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  border: 1px solid #d8d4cc;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.nav-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.nav-btn.hidden {
+  display: none;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px 2vw 48px;
+  max-width: 1600px;
+  width: min(96vw, 1600px);
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.panel.soft {
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.panel.admin {
+  margin-top: 24px;
+}
+
+h2, h3, h4 {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.form-help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input, select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #d8d4cc;
+  font-family: 'Sora', sans-serif;
+  background: #fff;
+}
+
+.table-search {
+  min-width: 180px;
+  max-width: 260px;
+  width: 100%;
+}
+
+button {
+  font-family: 'Sora', sans-serif;
+}
+
+.btn {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn.secondary {
+  background: var(--accent-2);
+  color: #1a1400;
+}
+
+.btn.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #d0cbc3;
+}
+
+.btn.outline {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(31, 31, 31, 0.15);
+}
+
+.divider {
+  height: 1px;
+  background: #e5e1d8;
+  margin: 16px 0;
+}
+
+.table-wrapper {
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eee8dc;
+}
+
+.table-footer {
+  margin-top: 10px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pagination-controls select {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d8d4cc;
+  background: #fff;
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .nav-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+.panel.auth {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.module {
+  width: 100%;
+}

@@ -1,0 +1,51 @@
+<section class="panel module" id="module-dashboard">
+  <div class="metrics" id="metrics"></div>
+  <div class="panel soft gantt-panel">
+    <div class="gantt-header">
+      <div>
+        <h3>Diagrama de pagos por proveedor</h3>
+        <p class="helper-text">Acumulado semanal por proveedor con prioridad por combinacion proveedor/producto.</p>
+      </div>
+      <div class="gantt-controls">
+        <div class="gantt-legend">
+          <span class="legend-item"><span class="legend-dot low"></span>Baja</span>
+          <span class="legend-item"><span class="legend-dot medium"></span>Media</span>
+          <span class="legend-item"><span class="legend-dot high"></span>Alta</span>
+        </div>
+        <div class="gantt-actions">
+          <select id="gantt-export-week" class="select">
+            <option value="">Todas las semanas</option>
+          </select>
+          <button type="button" class="btn outline" id="gantt-export-btn">Descargar reporte</button>
+        </div>
+      </div>
+    </div>
+    <div class="gantt-wrapper">
+      <div id="gantt-chart"></div>
+    </div>
+  </div>
+
+  <div class="panel soft pivot-panel">
+    <div class="table-header">
+      <div>
+        <h3>Resumen de Proyección de Pagos</h3>
+        <p class="helper-text">Desglose por semana, proveedor, factura y producto con totales.</p>
+      </div>
+    </div>
+    <div class="table-wrapper pivot-wrapper">
+      <table id="dashboard-pivot-table">
+        <thead>
+          <tr>
+            <th>Semana</th>
+            <th>Proveedor</th>
+            <th>Factura</th>
+            <th>Producto</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-pivot-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>

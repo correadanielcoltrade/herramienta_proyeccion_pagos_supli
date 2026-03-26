@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Projection Tool</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/modules/dashboard.css">
+  <link rel="stylesheet" href="/static/css/modules/payments.css">
+  <link rel="stylesheet" href="/static/css/modules/catalogs.css">
+  <link rel="stylesheet" href="/static/css/modules/modals.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Herramienta de Proyección de Pagos</h1>
+      <p>Proyección y control de pagos por semana y proveedor</p>
+    </div>
+    <div class="session">
+      <span id="session-user">Sin sesión</span>
+      <button id="logout-btn" class="btn ghost">Salir</button>
+    </div>
+  </header>
+
+  <nav class="module-nav">
+    <button class="nav-btn active" data-module="dashboard" id="nav-dashboard">Dashboard</button>
+    <button class="nav-btn" data-module="payments" id="nav-payments">Pagos</button>
+    <button class="nav-btn" data-module="brands" id="nav-brands">Marcas</button>
+    <button class="nav-btn" data-module="vendors" id="nav-vendors">Proveedores</button>
+    <button class="nav-btn" data-module="products" id="nav-products">Productos</button>
+    <button class="nav-btn" data-module="users" id="nav-users" data-admin-only="true">Usuarios</button>
+  </nav>
+
+  <main class="layout">
+    <section class="panel auth" id="auth-panel">
+      <h2>Acceso</h2>
+      <form id="login-form" class="form">
+        <label>Email
+          <input type="email" name="email" required>
+        </label>
+        <label>Password
+          <input type="password" name="password" required>
+        </label>
+        <button type="submit" class="btn primary">Ingresar</button>
+      </form>
+    </section>
+
+    <section id="modules-panel">
+      {% include 'partials/module-dashboard.html' %}
+      {% include 'partials/module-payments.html' %}
+      {% include 'partials/module-brands.html' %}
+      {% include 'partials/module-vendors.html' %}
+      {% include 'partials/module-products.html' %}
+      {% include 'partials/module-users.html' %}
+    </section>
+  </main>
+
+  {% include 'partials/modals.html' %}
+
+  <script src="/static/js/app.core.js"></script>
+  <script src="/static/js/app.catalogs.js"></script>
+  <script src="/static/js/app.dashboard.js"></script>
+  <script src="/static/js/app.payments.js"></script>
+  <script src="/static/js/app.auth.js"></script>
+  <script src="/static/js/app.users.js"></script>
+  <script src="/static/js/app.init.js"></script>
+</body>
+</html>

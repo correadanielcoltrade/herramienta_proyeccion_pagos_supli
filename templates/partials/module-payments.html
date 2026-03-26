@@ -1,0 +1,87 @@
+<section class="panel module" id="module-payments">
+  <div class="page-header">
+    <div>
+      <h2>Gestion de pagos</h2>
+      <p>Registra pagos generales con facturas y productos asociados.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn primary" id="payment-open" data-admin-only="true">Nuevo pago</button>
+      <button class="btn outline" id="export-week">Exportar por semana</button>
+      <button class="btn outline" id="export-provider">Exportar por proveedor</button>
+    </div>
+  </div>
+
+  <div class="payments-toolbar">
+    <div class="inline-group">
+      <span class="inline-label">Filtros</span>
+      <div class="inline-controls">
+        <select id="filter-provider">
+          <option value="">Proveedor</option>
+        </select>
+        <select id="filter-week">
+          <option value="">Semana</option>
+        </select>
+        <select id="filter-status">
+          <option value="">Estado</option>
+          <option value="Pagado">Pagado</option>
+          <option value="Pendiente">Pendiente</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="inline-group">
+      <span class="inline-label">Buscar</span>
+      <div class="inline-controls">
+        <input type="search" id="payments-search" class="table-search" placeholder="Buscar pago">
+      </div>
+    </div>
+
+    <div class="inline-group" id="admin-panel">
+      <span class="inline-label">Importacion masiva</span>
+      <div class="inline-controls">
+        <button type="button" class="btn outline small" id="payment-template" data-admin-only="true">Template Excel</button>
+        <form id="upload-form" class="inline-form">
+          <input type="file" name="file" accept=".xlsx">
+          <button type="submit" class="btn secondary small">Importar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel table-panel">
+    <div class="table-header">
+      <div>
+        <h3>Listado de pagos</h3>
+        <p class="helper-text">Selecciona pagos para eliminar en bloque.</p>
+      </div>
+      <div class="table-actions">
+        <label class="table-select-all">
+          <input type="checkbox" id="payments-select-all">
+          Seleccionar todo
+        </label>
+        <button class="btn ghost" id="refresh-btn">Actualizar</button>
+        <button class="btn danger" id="payments-bulk-delete" data-admin-only="true" disabled>Eliminar seleccionados</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="payments-table">
+        <thead>
+          <tr>
+            <th class="catalog-select-col"></th>
+            <th>ID</th>
+            <th>Proveedor</th>
+            <th>Facturas</th>
+            <th>Productos</th>
+            <th>Fecha</th>
+            <th>Semana</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="table-footer" data-table="payments-table"></div>
+  </div>
+</section>

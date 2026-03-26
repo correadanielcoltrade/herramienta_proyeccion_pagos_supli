@@ -1,0 +1,292 @@
+﻿<div class="modal" id="brand-modal" aria-hidden="true">
+  <div class="modal-content modal-md">
+    <div class="modal-header">
+      <div>
+        <h3>Marca</h3>
+        <p class="modal-subtitle">Define la marca y su prioridad de pago.</p>
+      </div>
+      <button type="button" class="btn ghost modal-close" data-modal="brand-modal">Cerrar</button>
+    </div>
+    <form id="brand-form" class="form modal-form">
+      <input type="hidden" name="id">
+      <div class="modal-section">
+        <h4 class="modal-section-title">Información principal</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">Nombre de la marca</span>
+            <input type="text" name="name" placeholder="Ej: Acme" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoría de prioridad</span>
+            <select name="category">
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+              <option value="Normal">Normal</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">Guardar</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="brand-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="vendor-modal" aria-hidden="true">
+  <div class="modal-content modal-md">
+    <div class="modal-header">
+      <div>
+        <h3>Proveedor</h3>
+        <p class="modal-subtitle">Registra datos comerciales y prioridad del proveedor.</p>
+      </div>
+      <button type="button" class="btn ghost modal-close" data-modal="vendor-modal">Cerrar</button>
+    </div>
+    <form id="vendor-form" class="form modal-form">
+      <input type="hidden" name="id">
+      <div class="modal-section">
+        <h4 class="modal-section-title">Datos del proveedor</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">Nombre del proveedor</span>
+            <input type="text" name="name" placeholder="Ej: Distribuciones Norte" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Estado</span>
+            <select name="status">
+              <option value="Nacional">Nacional</option>
+              <option value="Internacional">Internacional</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select name="type">
+              <option value="Comercial">Comercial</option>
+              <option value="Administrativo">Administrativo</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoría de prioridad</span>
+            <select name="category">
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+              <option value="Normal">Normal</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">Guardar</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="vendor-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="product-modal" aria-hidden="true">
+  <div class="modal-content modal-md">
+    <div class="modal-header">
+      <div>
+        <h3>Producto</h3>
+        <p class="modal-subtitle">Define la información comercial del producto.</p>
+      </div>
+      <button type="button" class="btn ghost modal-close" data-modal="product-modal">Cerrar</button>
+    </div>
+    <form id="product-form" class="form modal-form">
+      <input type="hidden" name="id">
+      <div class="modal-section">
+        <h4 class="modal-section-title">Identificación</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">SKU</span>
+            <input type="text" name="sku" placeholder="Ej: SKU-001">
+          </label>
+          <label class="field">
+            <span class="field-label">UPC</span>
+            <input type="text" name="upc" placeholder="Ej: 7701234567890">
+          </label>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4 class="modal-section-title">Descripción comercial</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">Marca</span>
+            <select name="brand_id" id="brand-select">
+              <option value="">Sin marca</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Descripción</span>
+            <input type="text" name="description" placeholder="Ej: Café molido 500g" required>
+          </label>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4 class="modal-section-title">Clasificación</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">Tipo de producto</span>
+            <select name="product_type">
+              <option value="PUSH">PUSH</option>
+              <option value="PULL">PULL</option>
+              <option value="IN&OUT">IN&OUT</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Canal</span>
+            <select name="channel">
+              <option value="Omnicanal">Omnicanal</option>
+              <option value="Retail">Retail</option>
+              <option value="Telcom">Telcom</option>
+              <option value="E-Commerce">E-Commerce</option>
+              <option value="Resellers">Resellers</option>
+              <option value="Corporativo">Corporativo</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoría de prioridad</span>
+            <select name="category">
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+              <option value="Normal">Normal</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">Guardar</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="product-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="payment-modal" aria-hidden="true">
+  <div class="modal-content modal-xl">
+    <div class="modal-header">
+      <div>
+        <h3 id="payment-modal-title">Nuevo pago</h3>
+        <p class="modal-subtitle">Registra pagos con facturas y productos asociados.</p>
+      </div>
+      <button type="button" class="btn ghost modal-close" data-modal="payment-modal">Cerrar</button>
+    </div>
+    <form id="payment-form" class="form payment-form">
+      <input type="hidden" name="id">
+      <div class="payment-layout">
+        <section class="payment-card">
+          <div class="payment-card-header">
+            <h4>Datos del pago</h4>
+            <p class="helper-text">Completa la informaciÃ³n general antes de agregar facturas.</p>
+          </div>
+          <div class="payment-fields">
+            <label class="field">
+              <span class="field-label">Proveedor</span>
+              <select name="provider_id" id="provider-select" required>
+                <option value="">Selecciona proveedor</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">Fecha de pago</span>
+              <input type="date" name="date" required>
+            </label>
+            <label class="field">
+              <span class="field-label">Estado</span>
+              <select name="status">
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagado">Pagado</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="payment-card payment-items">
+          <div class="payment-card-header">
+            <div>
+              <h4>Detalle de facturas</h4>
+              <p class="helper-text">Agrega factura, producto, cantidad y fecha de vencimiento.</p>
+            </div>
+            <button type="button" class="btn outline small" id="add-item-btn">Agregar Ã­tem</button>
+          </div>
+          <div class="items-head">
+            <span>Factura</span>
+            <span>Producto</span>
+            <span>Cantidad</span>
+            <span>Vencimiento</span>
+            <span></span>
+          </div>
+          <div class="items" id="items-container"></div>
+        </section>
+      </div>
+
+      <div class="modal-actions payment-actions">
+        <button type="submit" class="btn primary">Guardar pago</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="payment-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="user-edit-modal" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Editar usuario</h3>
+      <button type="button" class="btn ghost modal-close" data-modal="user-edit-modal">Cerrar</button>
+    </div>
+    <form id="user-edit-form" class="form compact">
+      <input type="hidden" name="id">
+      <label>Nombre
+        <input type="text" name="name" placeholder="Nombre completo">
+      </label>
+      <label>Email
+        <input type="email" name="email" required>
+      </label>
+      <label>Rol
+        <select name="role">
+          <option value="USER">Usuario</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+      </label>
+      <label>Nueva password (opcional)
+        <input type="password" name="password">
+      </label>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">Guardar cambios</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="user-edit-modal">Cancelar</button>
+      </div>
+      <p class="form-help" id="user-edit-hint"></p>
+    </form>
+  </div>
+</div>
+
+<template id="item-template">
+  <div class="item-row">
+    <label class="field">
+      <span class="field-label">Factura</span>
+      <input type="text" name="invoice" placeholder="Ej: F-1020" required>
+    </label>
+    <label class="field">
+      <span class="field-label">Producto</span>
+      <div class="product-combobox" data-product-combobox>
+        <input type="text" class="product-combobox-input" placeholder="Buscar o seleccionar producto" autocomplete="off">
+        <div class="product-combobox-list" role="listbox" hidden></div>
+      </div>
+      <select name="product_id" required class="product-select-hidden">
+        <option value="">Selecciona producto</option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label">Cantidad</span>
+      <input type="number" name="quantity" min="0" step="1" required>
+    </label>
+    <label class="field">
+      <span class="field-label">Fecha de vencimiento</span>
+      <input type="date" name="due_date">
+    </label>
+    <button type="button" class="btn ghost small remove-item">Quitar</button>
+  </div>
+</template>

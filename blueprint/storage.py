@@ -22,12 +22,12 @@ DATA_FILES = {
 }
 
 DB_TABLES = {
-    'pp_users': 'pp_users',
-    'pp_payments': 'pp_payments',
-    'pp_providers': 'pp_providers',
-    'pp_products': 'pp_products',
-    'pp_brands': 'pp_brands',
-    'pp_logs': 'pp_logs',
+    'pp_users': 'users',
+    'pp_payments': 'payments',
+    'pp_providers': 'providers',
+    'pp_products': 'products',
+    'pp_brands': 'brands',
+    'pp_logs': 'logs',
 }
 
 _TABLE_RESOLUTION = {}

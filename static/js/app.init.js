@@ -163,7 +163,7 @@ el.logoutBtn.addEventListener('click', () => {
   setSession('', '');
 });
 
-el.navDashboard.addEventListener('click', () => setActiveModule('dashboard'));
+el.navDashboard.addEventListener('click', () => { setActiveModule('dashboard'); loadDashboard(); });
 el.navPayments.addEventListener('click', () => setActiveModule('payments'));
 el.navBrands.addEventListener('click', () => setActiveModule('brands'));
 el.navVendors.addEventListener('click', () => setActiveModule('vendors'));

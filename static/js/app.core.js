@@ -205,7 +205,7 @@ async function apiFetch(path, options = {}) {
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  const response = await fetch(path, { ...options, headers });
+  const response = await fetch(path, { ...options, headers, cache: 'no-store' });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     const message = data.error || 'Error en la solicitud';

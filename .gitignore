@@ -11,6 +11,7 @@ env/
 
 # Local environment / secrets
 .env
+.env.example
 
 # Local data files
 data/*.json

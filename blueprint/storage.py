@@ -30,6 +30,8 @@ DB_TABLES = {
     'pp_logs': 'pp_logs',
 }
 
+_TABLE_RESOLUTION = {}
+
 
 def _data_path(file_key):
     base_dir = current_app.config['DATA_DIR']
@@ -72,6 +74,8 @@ def _db_enabled():
 def _db_table_prefix():
     prefix = os.getenv('DB_TABLE_PREFIX') or 'proyeccionpagossupli'
     prefix = prefix.strip()
+    # Sanitize to avoid invalid identifiers.
+    prefix = ''.join(ch for ch in prefix if ch.isalnum() or ch == '_')
     if prefix and not prefix.endswith('_'):
         prefix = f"{prefix}_"
     return prefix
@@ -104,6 +108,58 @@ def _db_connect():
 
 def _db_table(file_key):
     return f"{_db_table_prefix()}{DB_TABLES[file_key]}"
+
+
+def _table_candidates(file_key):
+    base = DB_TABLES[file_key]
+    prefix = _db_table_prefix()
+    if not prefix:
+        return [base]
+    return [f"{prefix}{base}", base]
+
+
+def _resolve_table(file_key, conn):
+    cached = _TABLE_RESOLUTION.get(file_key)
+    if cached:
+        return cached
+
+    candidates = _table_candidates(file_key)
+    if len(candidates) == 1:
+        _TABLE_RESOLUTION[file_key] = candidates[0]
+        return candidates[0]
+
+    prefixed, fallback = candidates[0], candidates[1]
+    prefixed_exists = False
+    fallback_exists = False
+    prefixed_count = 0
+    fallback_count = 0
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT to_regclass(%s)", (prefixed,))
+        prefixed_exists = cur.fetchone()[0] is not None
+        cur.execute("SELECT to_regclass(%s)", (fallback,))
+        fallback_exists = cur.fetchone()[0] is not None
+
+        if prefixed_exists:
+            cur.execute(f"SELECT COUNT(*) FROM {prefixed}")
+            prefixed_count = cur.fetchone()[0]
+        if fallback_exists:
+            cur.execute(f"SELECT COUNT(*) FROM {fallback}")
+            fallback_count = cur.fetchone()[0]
+
+    if prefixed_exists and prefixed_count > 0:
+        chosen = prefixed
+    elif fallback_exists and fallback_count > 0:
+        chosen = fallback
+    elif prefixed_exists:
+        chosen = prefixed
+    elif fallback_exists:
+        chosen = fallback
+    else:
+        chosen = prefixed
+
+    _TABLE_RESOLUTION[file_key] = chosen
+    return chosen
 
 
 def _ensure_table(conn, table_name):
@@ -156,7 +212,7 @@ def load_records(file_key, default_value=None):
     if _db_enabled():
         conn = _db_connect()
         try:
-            table_name = _db_table(file_key)
+            table_name = _resolve_table(file_key, conn)
             _ensure_table(conn, table_name)
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
@@ -187,7 +243,7 @@ def save_records(file_key, records):
     if _db_enabled():
         conn = _db_connect()
         try:
-            table_name = _db_table(file_key)
+            table_name = _resolve_table(file_key, conn)
             _ensure_table(conn, table_name)
             with conn.cursor() as cur:
                 cur.execute(f"DELETE FROM {table_name}")

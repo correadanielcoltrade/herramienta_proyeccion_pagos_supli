@@ -2,8 +2,8 @@ function updateOrdersTotal() {
   const inputs = document.querySelectorAll('#orders-container .order-amount-input');
   let total = 0;
   inputs.forEach((i) => { total += Number(i.value || 0); });
-  const el = document.getElementById('orders-grand-total');
-  if (el) el.textContent = formatCurrency(total);
+  const totalEl = document.getElementById('orders-grand-total');
+  if (totalEl) totalEl.textContent = formatCurrency(total);
 }
 
 function addOrderRow(data) {

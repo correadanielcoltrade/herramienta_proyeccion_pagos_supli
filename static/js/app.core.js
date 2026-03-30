@@ -176,6 +176,9 @@ function openModal(modalEl) {
 
 function closeModal(modalEl) {
   if (!modalEl) return;
+  if (modalEl.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
   modalEl.classList.remove('open');
   modalEl.setAttribute('aria-hidden', 'true');
 }

@@ -158,6 +158,93 @@
   justify-content: flex-end;
 }
 
+/* ── OC / Embarques dentro del modal de pago ── */
+.modal-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.modal-section-header .modal-section-title {
+  margin: 0;
+}
+
+.orders-head {
+  display: grid;
+  grid-template-columns: 1fr 160px 80px;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.order-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 80px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0eee8;
+}
+
+.order-row:last-child {
+  border-bottom: none;
+}
+
+.order-row .order-input,
+.order-row .order-amount-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d8d4cc;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  background: #fff;
+}
+
+.order-row .order-amount-input {
+  text-align: right;
+}
+
+.order-row .remove-order {
+  justify-self: center;
+}
+
+.orders-total-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 80px;
+  gap: 8px;
+  padding: 10px 0 4px;
+  margin-top: 6px;
+  border-top: 2px solid #eee8dc;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.orders-total-row span:first-child {
+  text-align: right;
+  padding-right: 8px;
+}
+
+.orders-total-row span:nth-child(2) {
+  text-align: right;
+  padding-right: 4px;
+}
+
+@media (max-width: 560px) {
+  .orders-head,
+  .order-row,
+  .orders-total-row {
+    grid-template-columns: 1fr 120px 64px;
+  }
+}
+
 .payment-form {
   display: grid;
   gap: 18px;

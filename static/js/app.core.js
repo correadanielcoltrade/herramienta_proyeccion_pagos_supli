@@ -282,7 +282,7 @@ function applyPagination(tableId) {
   if (!footer) return;
 
   const pagination = getPaginationState(tableId);
-  const rows = [...tbody.querySelectorAll('tr')];
+  const rows = [...tbody.querySelectorAll('tr')].filter((r) => !r.dataset.paginationSkip);
   const visibleRows = rows.filter((row) => row.dataset.filtered !== 'true');
   const total = visibleRows.length;
   const size = pagination.size || 10;
@@ -296,10 +296,17 @@ function applyPagination(tableId) {
   rows.forEach((row) => {
     if (row.dataset.filtered === 'true') {
       row.style.display = 'none';
+      const next = row.nextElementSibling;
+      if (next && next.dataset.paginationSkip) next.style.display = 'none';
     }
   });
   visibleRows.forEach((row, index) => {
-    row.style.display = index >= start && index < end ? '' : 'none';
+    const show = index >= start && index < end;
+    row.style.display = show ? '' : 'none';
+    const next = row.nextElementSibling;
+    if (next && next.dataset.paginationSkip && !show) {
+      next.style.display = 'none';
+    }
   });
 
   const info = footer.querySelector('[data-role="info"]');
@@ -325,7 +332,7 @@ function applyTableSearch(tableId, query) {
   const tbody = table.querySelector('tbody');
   if (!tbody) return;
   const term = String(query || '').trim().toLowerCase();
-  const rows = [...tbody.querySelectorAll('tr')];
+  const rows = [...tbody.querySelectorAll('tr')].filter((r) => !r.dataset.paginationSkip);
 
   rows.forEach((row) => {
     if (!term) {

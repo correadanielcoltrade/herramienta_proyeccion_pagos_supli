@@ -135,14 +135,23 @@ function renderPayments(payments) {
   payments.forEach((p) => {
     const data = p.data_json;
     const orders = Array.isArray(data.orders) ? data.orders : [];
+    const orderCount = orders.length;
     const orderLabels = orders.map((o) => (typeof o === 'object' ? o.order : o)).filter(Boolean);
+
     const tr = document.createElement('tr');
+    tr.className = 'payment-main-row';
     const editBtn = isAdmin ? `<button class="btn outline small" data-edit-id="${p.id}">Editar</button>` : '';
+
     tr.innerHTML = `
       <td class="catalog-select-col"><input type="checkbox" class="catalog-select" value="${p.id}"></td>
       <td>${p.id}</td>
       <td>${data.provider_name || '-'}</td>
-      <td>${formatCompactList(orderLabels)}</td>
+      <td>
+        <button type="button" class="btn ghost small expand-orders-btn" aria-expanded="false">
+          <span class="expand-icon">▶</span> ${orderCount} OC${orderCount !== 1 ? 's' : ''}
+        </button>
+        <span style="display:none">${orderLabels.join(' ')}</span>
+      </td>
       <td>${data.date || '-'}</td>
       <td>${data.week || '-'}</td>
       <td>${formatCurrency(data.amount)}</td>
@@ -152,7 +161,41 @@ function renderPayments(payments) {
         ${editBtn}
       </td>
     `;
+
+    const detailsTr = document.createElement('tr');
+    detailsTr.className = 'order-details-row';
+    detailsTr.dataset.paginationSkip = 'true';
+    detailsTr.style.display = 'none';
+
+    const ordersBodyHtml = orders.length
+      ? orders.map((o) => {
+          const label = typeof o === 'object' ? (o.order || '-') : String(o);
+          const amount = typeof o === 'object' ? (o.amount || 0) : 0;
+          return `<tr><td>${label}</td><td class="order-detail-amount">${formatCurrency(amount)}</td></tr>`;
+        }).join('')
+      : '<tr><td colspan="2" class="order-detail-empty">Sin OC registradas</td></tr>';
+
+    detailsTr.innerHTML = `
+      <td colspan="9" class="order-details-cell">
+        <div class="order-details-inner">
+          <table class="order-details-table">
+            <thead><tr><th>OC / Embarque</th><th>Valor</th></tr></thead>
+            <tbody>${ordersBodyHtml}</tbody>
+          </table>
+        </div>
+      </td>
+    `;
+
     el.paymentsTable.appendChild(tr);
+    el.paymentsTable.appendChild(detailsTr);
+
+    tr.querySelector('.expand-orders-btn').addEventListener('click', () => {
+      const btn = tr.querySelector('.expand-orders-btn');
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      btn.querySelector('.expand-icon').textContent = expanded ? '▶' : '▼';
+      detailsTr.style.display = expanded ? 'none' : '';
+    });
   });
 
   if (typeof bindCatalogSelection === 'function') {

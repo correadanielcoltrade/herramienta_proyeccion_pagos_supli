@@ -167,63 +167,52 @@
 </div>
 
 <div class="modal" id="payment-modal" aria-hidden="true">
-  <div class="modal-content modal-xl">
+  <div class="modal-content modal-lg">
     <div class="modal-header">
       <div>
         <h3 id="payment-modal-title">Nuevo pago</h3>
-        <p class="modal-subtitle">Registra pagos con facturas y productos asociados.</p>
+        <p class="modal-subtitle">Registra el pago con las órdenes de compra o embarques asociados.</p>
       </div>
       <button type="button" class="btn ghost modal-close" data-modal="payment-modal">Cerrar</button>
     </div>
     <form id="payment-form" class="form payment-form">
       <input type="hidden" name="id">
-      <div class="payment-layout">
-        <section class="payment-card">
-          <div class="payment-card-header">
-            <h4>Datos del pago</h4>
-            <p class="helper-text">Completa la informaciÃ³n general antes de agregar facturas.</p>
-          </div>
-          <div class="payment-fields">
-            <label class="field">
-              <span class="field-label">Proveedor</span>
-              <select name="provider_id" id="provider-select" required>
-                <option value="">Selecciona proveedor</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">Fecha de pago</span>
-              <input type="date" name="date" required>
-            </label>
-            <label class="field">
-              <span class="field-label">Estado</span>
-              <select name="status">
-                <option value="Pendiente">Pendiente</option>
-                <option value="Pagado">Pagado</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section class="payment-card payment-items">
-          <div class="payment-card-header">
-            <div>
-              <h4>Detalle de facturas</h4>
-              <p class="helper-text">Agrega factura, producto, cantidad y fecha de vencimiento.</p>
-            </div>
-            <button type="button" class="btn outline small" id="add-item-btn">Agregar Ã­tem</button>
-          </div>
-          <div class="items-head">
-            <span>Factura</span>
-            <span>Producto</span>
-            <span>Cantidad</span>
-            <span>Vencimiento</span>
-            <span></span>
-          </div>
-          <div class="items" id="items-container"></div>
-        </section>
+      <div class="modal-section">
+        <h4 class="modal-section-title">Datos del pago</h4>
+        <div class="modal-grid">
+          <label class="field">
+            <span class="field-label">Proveedor</span>
+            <select name="provider_id" id="provider-select" required>
+              <option value="">Selecciona proveedor</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Valor Pendiente por Pagar</span>
+            <input type="number" name="amount" min="0" step="0.01" placeholder="0.00" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Fecha de pago</span>
+            <input type="date" name="date" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Estado</span>
+            <select name="status">
+              <option value="Pendiente">Pendiente</option>
+              <option value="Pagado">Pagado</option>
+            </select>
+          </label>
+        </div>
       </div>
 
-      <div class="modal-actions payment-actions">
+      <div class="modal-section">
+        <div class="modal-section-header">
+          <h4 class="modal-section-title">OC / Embarques</h4>
+          <button type="button" class="btn outline small" id="add-order-btn">+ Agregar OC</button>
+        </div>
+        <div id="orders-container"></div>
+      </div>
+
+      <div class="modal-actions">
         <button type="submit" class="btn primary">Guardar pago</button>
         <button type="button" class="btn ghost modal-cancel" data-modal="payment-modal">Cancelar</button>
       </div>
@@ -263,30 +252,3 @@
   </div>
 </div>
 
-<template id="item-template">
-  <div class="item-row">
-    <label class="field">
-      <span class="field-label">Factura</span>
-      <input type="text" name="invoice" placeholder="Ej: F-1020" required>
-    </label>
-    <label class="field">
-      <span class="field-label">Producto</span>
-      <div class="product-combobox" data-product-combobox>
-        <input type="text" class="product-combobox-input" placeholder="Buscar o seleccionar producto" autocomplete="off">
-        <div class="product-combobox-list" role="listbox" hidden></div>
-      </div>
-      <select name="product_id" required class="product-select-hidden">
-        <option value="">Selecciona producto</option>
-      </select>
-    </label>
-    <label class="field">
-      <span class="field-label">Cantidad</span>
-      <input type="number" name="quantity" min="0" step="1" required>
-    </label>
-    <label class="field">
-      <span class="field-label">Fecha de vencimiento</span>
-      <input type="date" name="due_date">
-    </label>
-    <button type="button" class="btn ghost small remove-item">Quitar</button>
-  </div>
-</template>

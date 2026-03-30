@@ -1,4 +1,4 @@
-﻿
+
 import io
 import csv
 import json
@@ -13,20 +13,9 @@ payments_bp = Blueprint('payments', __name__)
 
 STATUS_VALUES = {'PAGADO': 'Pagado', 'PENDIENTE': 'Pendiente'}
 CATEGORY_VALUES = {'ALTA': 'Alta', 'MEDIA': 'Media', 'BAJA': 'Baja'}
-CATEGORY_RANK = {'Normal': 0, 'Baja': 1, 'Media': 2, 'Alta': 3}
 
 PROVIDER_STATUS_VALUES = {'NACIONAL': 'Nacional', 'INTERNACIONAL': 'Internacional'}
 PROVIDER_TYPE_VALUES = {'COMERCIAL': 'Comercial', 'ADMINISTRATIVO': 'Administrativo'}
-
-PRODUCT_TYPE_VALUES = {'PUSH': 'PUSH', 'PULL': 'PULL', 'IN&OUT': 'IN&OUT'}
-CHANNEL_VALUES = {
-    'OMNICANAL': 'Omnicanal',
-    'RETAIL': 'Retail',
-    'TELCOM': 'Telcom',
-    'E-COMMERCE': 'E-Commerce',
-    'RESELLERS': 'Resellers',
-    'CORPORATIVO': 'Corporativo',
-}
 
 
 def _normalize_status(value):
@@ -55,31 +44,6 @@ def _normalize_provider_type(value):
         return 'Comercial'
     key = str(value).strip().upper()
     return PROVIDER_TYPE_VALUES.get(key, 'Comercial')
-
-
-def _normalize_product_type(value):
-    if not value:
-        return None
-    key = str(value).strip().upper()
-    return PRODUCT_TYPE_VALUES.get(key, value)
-
-
-def _normalize_channel(value):
-    if not value:
-        return None
-    key = str(value).strip().upper()
-    return CHANNEL_VALUES.get(key, value)
-
-
-def _summary_category(categories):
-    best = 'Normal'
-    best_rank = -1
-    for cat in categories:
-        rank = CATEGORY_RANK.get(cat or 'Normal', 0)
-        if rank > best_rank:
-            best_rank = rank
-            best = cat or 'Normal'
-    return best or 'Normal'
 
 
 def _parse_date(value):
@@ -124,12 +88,11 @@ def _amount(value):
         return 0.0
 
 
-def _compute_priority(provider_category, product_category):
-    provider_is_high = (provider_category or '').strip().lower() == 'alta'
-    product_is_high = (product_category or '').strip().lower() == 'alta'
-    if provider_is_high and product_is_high:
+def _compute_priority(provider_category):
+    cat = (provider_category or '').strip()
+    if cat == 'Alta':
         return 'Alta'
-    if provider_is_high or product_is_high:
+    if cat == 'Media':
         return 'Media'
     return 'Baja'
 
@@ -139,30 +102,6 @@ def _find_by_id(records, record_id):
         if str(record['id']) == str(record_id):
             return record
     return None
-
-
-def _get_or_create_brand(name, category, brands, brand_index):
-    if not name:
-        return None
-    key = name.strip().lower()
-    existing = brand_index.get(key)
-    if existing:
-        if category and existing['data_json'].get('category') != category:
-            existing['data_json']['category'] = category
-            existing['updated_at'] = utc_now_iso()
-        return existing
-    record = {
-        'id': next_id(brands),
-        'created_at': utc_now_iso(),
-        'updated_at': utc_now_iso(),
-        'data_json': {
-            'name': name.strip(),
-            'category': category or 'Normal',
-        }
-    }
-    brands.append(record)
-    brand_index[key] = record
-    return record
 
 
 def _get_or_create_provider(name, category, providers, provider_index, status=None, provider_type=None):
@@ -197,181 +136,39 @@ def _get_or_create_provider(name, category, providers, provider_index, status=No
     return record
 
 
-def _product_label(sku, description, fallback=None):
-    if sku and description:
-        return f"{sku} - {description}"
-    if description:
-        return description
-    if sku:
-        return sku
-    return fallback or ''
-
-
-def _build_product_data(payload, brands, brand_index):
-    sku = (payload.get('sku') or payload.get('SKU') or '').strip()
-    upc = (payload.get('upc') or payload.get('UPC') or '').strip()
-    description = (payload.get('description') or payload.get('descripcion') or payload.get('Descripción') or payload.get('product_name') or payload.get('producto') or '').strip()
-    brand_id = payload.get('brand_id') or payload.get('marca_id')
-    brand_name = (payload.get('brand_name') or payload.get('marca') or '').strip()
-    brand_category = _normalize_category(payload.get('brand_category') or payload.get('categoria_marca'))
-    product_type = _normalize_product_type(payload.get('product_type') or payload.get('tipo_producto'))
-    channel = _normalize_channel(payload.get('channel') or payload.get('canal'))
-    category = _normalize_category(payload.get('category') or payload.get('categoria'))
-
-    brand = None
-    if brand_id:
-        brand = _find_by_id(brands, brand_id)
-    if not brand and brand_name:
-        brand = _get_or_create_brand(brand_name, brand_category, brands, brand_index)
-
-    label = _product_label(sku, description, fallback=description)
-
-    return {
-        'sku': sku or None,
-        'upc': upc or None,
-        'brand_id': brand['id'] if brand else None,
-        'brand_name': brand['data_json'].get('name') if brand else brand_name or None,
-        'description': description or None,
-        'product_type': product_type,
-        'channel': channel,
-        'category': category,
-        'label': label,
-    }
-
-
-def _product_key_from_data(data):
-    value = data.get('sku') or data.get('label') or data.get('description') or data.get('name')
-    if not value:
-        return None
-    return str(value).strip().lower()
-
-
-def _product_index(products):
-    index = {}
-    for product in products:
-        key = _product_key_from_data(product.get('data_json', {}))
-        if key:
-            index[key] = product
-    return index
-
-
-def _get_or_create_product(payload, products, product_index, brands, brand_index):
-    data = _build_product_data(payload, brands, brand_index)
-    key = _product_key_from_data(data)
-    if key and key in product_index:
-        existing = product_index[key]
-        existing['data_json'].update({k: v for k, v in data.items() if v})
-        existing['updated_at'] = utc_now_iso()
-        return existing
-
-    record = {
-        'id': next_id(products),
-        'created_at': utc_now_iso(),
-        'updated_at': utc_now_iso(),
-        'data_json': data,
-    }
-    products.append(record)
-    if key:
-        product_index[key] = record
-    return record
-
-def _coerce_items(payload):
-    items_payload = payload.get('items') or payload.get('detalle') or payload.get('detalles')
-    if isinstance(items_payload, str):
-        try:
-            items_payload = json.loads(items_payload)
-        except Exception:
-            items_payload = None
-    if items_payload is None:
-        items_payload = [{
-            'invoice': payload.get('invoice') or payload.get('factura') or payload.get('nro_factura'),
-            'product_id': payload.get('product_id'),
-            'product_name': payload.get('product_name') or payload.get('producto') or payload.get('product'),
-            'product_category': payload.get('product_category') or payload.get('categoria_producto') or payload.get('categoria'),
-            'amount': payload.get('amount') or payload.get('monto'),
-            'quantity': payload.get('quantity') or payload.get('cantidad'),
-            'due_date': payload.get('due_date') or payload.get('fecha_vencimiento'),
-        }]
-    if not isinstance(items_payload, list):
-        return []
-    return items_payload
-
-
-def _normalize_items(payload, products, product_index, brands, brand_index):
-    items_payload = _coerce_items(payload)
-    items = []
-    for item in items_payload:
-        if not isinstance(item, dict):
-            continue
-        product = None
-        product_id = item.get('product_id')
-        product_name = item.get('product_name') or item.get('producto') or item.get('product') or item.get('description') or item.get('descripcion')
-        product_category = _normalize_category(item.get('product_category') or item.get('categoria_producto') or item.get('categoria'))
-        quantity = _amount(item.get('quantity') or item.get('cantidad') or item.get('qty'))
-        amount = _amount(item.get('amount') or item.get('monto') or item.get('valor'))
-        if amount <= 0 and quantity:
-            amount = quantity
-        invoice = item.get('invoice') or item.get('factura') or item.get('nro_factura')
-        due_date_value = item.get('due_date') or item.get('fecha_vencimiento') or item.get('fecha_ven')
-        parsed_due_date = _parse_date(due_date_value)
-
-        if product_id:
-            product = _find_by_id(products, product_id)
-        if not product:
-            product_payload = dict(item)
-            if product_name:
-                product_payload['description'] = product_name
-            if product_category:
-                product_payload['category'] = product_category
-            product = _get_or_create_product(product_payload, products, product_index, brands, brand_index)
-
-        product_category = product['data_json'].get('category') if product else product_category
-        if product:
-            label = product['data_json'].get('label') or product['data_json'].get('description') or product['data_json'].get('name')
-        else:
-            label = product_name
-
-        if not (product or product_name):
-            continue
-
-        items.append({
-            'invoice': invoice,
-            'product_id': product['id'] if product else None,
-            'product_name': label,
-            'product_category': product_category,
-            'amount': amount,
-            'quantity': quantity,
-            'due_date': parsed_due_date.date().isoformat() if parsed_due_date else None,
-        })
-    return items
-
-
-def _normalize_payment_payload(payload, providers, products, provider_index, product_index, brands, brand_index):
+def _normalize_payment_payload(payload, providers, provider_index):
     provider_id = payload.get('provider_id')
-    provider_name = payload.get('provider_name') or payload.get('proveedor') or payload.get('vendor') or payload.get('provider')
-    provider_category = _normalize_category(payload.get('provider_category') or payload.get('categoria_proveedor'))
-    provider_status = _normalize_provider_status(payload.get('provider_status') or payload.get('status_proveedor'))
-    provider_type = _normalize_provider_type(payload.get('provider_type') or payload.get('tipo_proveedor'))
+    provider_name = (payload.get('provider_name') or payload.get('proveedor') or '').strip()
 
     provider = None
     if provider_id:
         provider = _find_by_id(providers, provider_id)
+    if not provider and provider_name:
+        provider = provider_index.get(provider_name.lower())
 
-    if not provider:
-        provider = _get_or_create_provider(provider_name, provider_category, providers, provider_index, provider_status, provider_type)
+    provider_category = provider['data_json'].get('category') if provider else 'Normal'
 
-    provider_category = provider['data_json'].get('category') if provider else provider_category
+    orders_raw = (
+        payload.get('orders')
+        or payload.get('ordenes')
+        or payload.get('order')
+        or payload.get('oc_embarque')
+        or payload.get('oc')
+        or ''
+    )
+    if isinstance(orders_raw, list):
+        orders = [str(o).strip() for o in orders_raw if str(o).strip()]
+    elif isinstance(orders_raw, str) and orders_raw.strip():
+        orders = [o.strip() for o in orders_raw.split(',') if o.strip()]
+    else:
+        orders = []
 
-    items = _normalize_items(payload, products, product_index, brands, brand_index)
-    product_categories = [item.get('product_category') for item in items if item.get('product_category')]
-    product_category = _summary_category(product_categories)
-
-    amount_items = sum(item.get('amount', 0) for item in items)
-    amount_value = amount_items if amount_items > 0 else _amount(payload.get('amount') or payload.get('monto'))
-
-    invoices = [item.get('invoice') for item in items if item.get('invoice')]
-    product_ids = [item.get('product_id') for item in items if item.get('product_id')]
-    product_names = [item.get('product_name') for item in items if item.get('product_name')]
+    amount = _amount(
+        payload.get('amount')
+        or payload.get('monto')
+        or payload.get('valor')
+        or payload.get('valor_pendiente')
+    )
 
     date_value = payload.get('date') or payload.get('fecha')
     parsed_date = _parse_date(date_value)
@@ -379,24 +176,19 @@ def _normalize_payment_payload(payload, providers, products, provider_index, pro
 
     return {
         'provider_id': provider['id'] if provider else None,
-        'provider_name': provider['data_json'].get('name') if provider else provider_name,
+        'provider_name': provider['data_json'].get('name') if provider else provider_name or None,
         'provider_category': provider_category,
-        'provider_status': provider['data_json'].get('status') if provider else provider_status,
-        'provider_type': provider['data_json'].get('type') if provider else provider_type,
-        'product_ids': product_ids,
-        'product_names': product_names,
-        'product_category': product_category,
-        'items': items,
-        'invoices': invoices,
+        'provider_status': provider['data_json'].get('status', 'Nacional') if provider else 'Nacional',
+        'provider_type': provider['data_json'].get('type', 'Comercial') if provider else 'Comercial',
+        'orders': orders,
         'date': parsed_date.date().isoformat() if parsed_date else None,
         'week': week_fields.get('week'),
         'week_year': week_fields.get('week_year'),
         'week_start': week_fields.get('week_start'),
         'week_end': week_fields.get('week_end'),
-        'amount': amount_value,
+        'amount': amount,
         'status': _normalize_status(payload.get('status') or payload.get('estado')),
-        'priority': _compute_priority(provider_category, product_category),
-        'raw': payload,
+        'priority': _compute_priority(provider_category),
     }
 
 
@@ -407,34 +199,12 @@ def _load_upload_records(file_storage):
         return []
 
 
-def _detect_group_key(records):
-    if not records:
-        return None
-    candidates = ['payment_id', 'pago_id', 'grupo_pago', 'lote_pago', 'batch_id', 'group_id']
-    for key in candidates:
-        if any(record.get(key) for record in records):
-            return key
-    return None
-
-
-def _group_records(records):
-    group_key = _detect_group_key(records)
-    if not group_key:
-        return [[record] for record in records]
-    groups = {}
-    for record in records:
-        key = record.get(group_key)
-        if key is None:
-            groups.setdefault(f'__single__{id(record)}', []).append(record)
-            continue
-        groups.setdefault(str(key), []).append(record)
-    return list(groups.values())
-
-
 def _ensure_excel(file_storage):
     filename = file_storage.filename or ''
     extension = filename.lower().split('.')[-1]
     return extension in ['xlsx', 'xlsm']
+
+
 @payments_bp.route('/payments', methods=['GET'])
 @auth_required()
 def list_payments():
@@ -472,16 +242,12 @@ def create_payment():
     payload = request.get_json(silent=True) or {}
     payments = load_records('pp_payments')
     providers = load_records('pp_providers')
-    products = load_records('pp_products')
-    brands = load_records('pp_brands')
 
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
-    product_index = _product_index(products)
-    brand_index = {b['data_json']['name'].lower(): b for b in brands}
 
-    data_json = _normalize_payment_payload(payload, providers, products, provider_index, product_index, brands, brand_index)
-    if not data_json.get('provider_id') or not data_json.get('items'):
-        return jsonify({'error': 'Proveedor y al menos un producto son requeridos'}), 400
+    data_json = _normalize_payment_payload(payload, providers, provider_index)
+    if not data_json.get('provider_id') or data_json.get('amount', 0) <= 0:
+        return jsonify({'error': 'Proveedor y monto mayor a 0 son requeridos'}), 400
 
     new_payment = {
         'id': next_id(payments),
@@ -493,8 +259,6 @@ def create_payment():
 
     save_records('pp_payments', payments)
     save_records('pp_providers', providers)
-    save_records('pp_products', products)
-    save_records('pp_brands', brands)
     invalidate_cache('dashboard')
 
     return jsonify(new_payment), 201
@@ -506,29 +270,23 @@ def update_payment(payment_id):
     payload = request.get_json(silent=True) or {}
     payments = load_records('pp_payments')
     providers = load_records('pp_providers')
-    products = load_records('pp_products')
-    brands = load_records('pp_brands')
 
     payment = _find_by_id(payments, payment_id)
     if not payment:
         return jsonify({'error': 'Pago no encontrado'}), 404
 
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
-    product_index = _product_index(products)
-    brand_index = {b['data_json']['name'].lower(): b for b in brands}
 
     data_json = payment['data_json']
-    updated_data = _normalize_payment_payload({**data_json, **payload}, providers, products, provider_index, product_index, brands, brand_index)
-    if not updated_data.get('provider_id') or not updated_data.get('items'):
-        return jsonify({'error': 'Proveedor y al menos un producto son requeridos'}), 400
+    updated_data = _normalize_payment_payload({**data_json, **payload}, providers, provider_index)
+    if not updated_data.get('provider_id') or updated_data.get('amount', 0) <= 0:
+        return jsonify({'error': 'Proveedor y monto mayor a 0 son requeridos'}), 400
 
     payment['data_json'] = updated_data
     payment['updated_at'] = utc_now_iso()
 
     save_records('pp_payments', payments)
     save_records('pp_providers', providers)
-    save_records('pp_products', products)
-    save_records('pp_brands', brands)
     invalidate_cache('dashboard')
 
     return jsonify(payment), 200
@@ -580,35 +338,30 @@ def bulk_payments():
 
     payments = load_records('pp_payments')
     providers = load_records('pp_providers')
-    products = load_records('pp_products')
-    brands = load_records('pp_brands')
 
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
-    product_index = _product_index(products)
-    brand_index = {b['data_json']['name'].lower(): b for b in brands}
 
     created = []
-    for group in _group_records(records):
-        if not group:
+    for record in records:
+        try:
+            if not isinstance(record, dict):
+                continue
+            data_json = _normalize_payment_payload(record, providers, provider_index)
+            if not data_json.get('provider_id') or data_json.get('amount', 0) <= 0:
+                continue
+            new_payment = {
+                'id': next_id(payments),
+                'created_at': utc_now_iso(),
+                'updated_at': utc_now_iso(),
+                'data_json': data_json,
+            }
+            payments.append(new_payment)
+            created.append(new_payment)
+        except Exception:
             continue
-        base = dict(group[0])
-        base['items'] = group
-        data_json = _normalize_payment_payload(base, providers, products, provider_index, product_index, brands, brand_index)
-        if not data_json.get('provider_id') or not data_json.get('items'):
-            continue
-        new_payment = {
-            'id': next_id(payments),
-            'created_at': utc_now_iso(),
-            'updated_at': utc_now_iso(),
-            'data_json': data_json,
-        }
-        payments.append(new_payment)
-        created.append(new_payment)
 
     save_records('pp_payments', payments)
     save_records('pp_providers', providers)
-    save_records('pp_products', products)
-    save_records('pp_brands', brands)
     invalidate_cache('dashboard')
 
     return jsonify({'created': len(created)}), 201
@@ -637,16 +390,7 @@ def bulk_delete_payments():
 @payments_bp.route('/templates/payments', methods=['GET'])
 @auth_required(['ADMIN'])
 def template_payments():
-    headers = [
-        'payment_id',
-        'provider_name',
-        'product_name',
-        'invoice',
-        'quantity',
-        'due_date',
-        'date',
-        'status',
-    ]
+    headers = ['payment_id', 'provider_name', 'order', 'valor_pendiente', 'fecha', 'estado']
     buffer = build_excel_template(headers, sheet_name='Pagos')
     return send_file(
         buffer,
@@ -670,35 +414,56 @@ def upload_payments():
 
     payments = load_records('pp_payments')
     providers = load_records('pp_providers')
-    products = load_records('pp_products')
-    brands = load_records('pp_brands')
 
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
-    product_index = _product_index(products)
-    brand_index = {b['data_json']['name'].lower(): b for b in brands}
+
+    # Group rows by payment_id when present; otherwise each row is its own payment
+    groups = {}
+    for record in records:
+        try:
+            pid = str(record.get('payment_id', '') or '').strip()
+            key = pid if pid else f'_single_{id(record)}'
+            if key not in groups:
+                groups[key] = {'base': dict(record), 'orders': [], 'amount': 0.0}
+            order_val = str(
+                record.get('order', '')
+                or record.get('oc', '')
+                or record.get('oc_embarque', '')
+                or ''
+            ).strip()
+            if order_val:
+                groups[key]['orders'].append(order_val)
+            groups[key]['amount'] += _amount(
+                record.get('valor_pendiente')
+                or record.get('amount')
+                or record.get('monto')
+            )
+        except Exception:
+            continue
 
     created = []
-    for group in _group_records(records):
-        if not group:
+    for key, group in groups.items():
+        try:
+            base = group['base']
+            base['orders'] = group['orders']
+            if group['amount'] > 0:
+                base['amount'] = group['amount']
+            data_json = _normalize_payment_payload(base, providers, provider_index)
+            if not data_json.get('provider_id') or data_json.get('amount', 0) <= 0:
+                continue
+            new_payment = {
+                'id': next_id(payments),
+                'created_at': utc_now_iso(),
+                'updated_at': utc_now_iso(),
+                'data_json': data_json,
+            }
+            payments.append(new_payment)
+            created.append(new_payment)
+        except Exception:
             continue
-        base = dict(group[0])
-        base['items'] = group
-        data_json = _normalize_payment_payload(base, providers, products, provider_index, product_index, brands, brand_index)
-        if not data_json.get('provider_id') or not data_json.get('items'):
-            continue
-        new_payment = {
-            'id': next_id(payments),
-            'created_at': utc_now_iso(),
-            'updated_at': utc_now_iso(),
-            'data_json': data_json,
-        }
-        payments.append(new_payment)
-        created.append(new_payment)
 
     save_records('pp_payments', payments)
     save_records('pp_providers', providers)
-    save_records('pp_products', products)
-    save_records('pp_brands', brands)
     invalidate_cache('dashboard')
 
     return jsonify({'created': len(created)}), 201

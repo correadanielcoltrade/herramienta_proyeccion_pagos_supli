@@ -43,16 +43,13 @@ if (el.paymentOpen && el.paymentModal) {
     if (typeof populateProviderSelect === 'function') {
       populateProviderSelect(el.providerSelect);
     }
-    if (el.itemsContainer) {
-      el.itemsContainer.innerHTML = '';
-      addItemRow();
-    }
+    clearOrdersForm();
     openModal(el.paymentModal);
   });
 }
 
-if (el.addItemBtn) {
-  el.addItemBtn.addEventListener('click', () => addItemRow());
+if (el.addOrderBtn) {
+  el.addOrderBtn.addEventListener('click', () => addOrderRow());
 }
 
 if (el.brandForm) {
@@ -197,7 +194,7 @@ bindModalDismiss(el.paymentModal);
 bindModalDismiss(el.userEditModal);
 
 updateUI();
-addItemRow();
+clearOrdersForm();
 if (state.token) {
   loadAll().catch(() => {
     setSession('', '');

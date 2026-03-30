@@ -149,25 +149,15 @@ function setGanttTooltipContent(tooltip, data) {
     const row = document.createElement('div');
     row.className = 'gantt-tooltip-row';
 
-    const invoice = document.createElement('span');
-    invoice.className = 'gantt-tooltip-invoice';
-    invoice.textContent = detail.invoice ? `Factura ${detail.invoice}` : 'Factura -';
-
-    const product = document.createElement('span');
-    product.className = 'gantt-tooltip-product';
-    product.textContent = detail.product_name || 'Producto -';
-
-    const category = document.createElement('span');
-    category.className = 'gantt-tooltip-category';
-    category.textContent = detail.product_category || 'Normal';
+    const order = document.createElement('span');
+    order.className = 'gantt-tooltip-invoice';
+    order.textContent = detail.order ? `OC/Emb: ${detail.order}` : 'OC/Emb: -';
 
     const amount = document.createElement('span');
     amount.className = 'gantt-tooltip-amount';
     amount.textContent = formatCurrency(detail.amount || 0);
 
-    row.appendChild(invoice);
-    row.appendChild(product);
-    row.appendChild(category);
+    row.appendChild(order);
     row.appendChild(amount);
     list.appendChild(row);
   });
@@ -373,44 +363,31 @@ function renderDashboardPivot(payments) {
     const providerKey = data.provider_id ? `id:${data.provider_id}` : `name:${providerName}`;
     const providerBucket = getProviderBucket(weekBucket, providerKey, providerName);
     const isPaid = data.status === 'Pagado';
+    const amount = Number(data.amount || 0);
 
-    let items = Array.isArray(data.items) ? data.items : [];
-    if (!items.length) {
-      items = [{
-        invoice: Array.isArray(data.invoices) ? data.invoices[0] : null,
-        product_name: Array.isArray(data.product_names) ? data.product_names[0] : data.product_name,
-        amount: data.amount || 0,
-      }];
-    }
+    const orders = Array.isArray(data.orders) && data.orders.length ? data.orders : ['—'];
+    orders.forEach((order) => {
+      const orderLabel = order !== '—' ? order : 'Sin OC';
+      const orderKey = `order:${orderLabel}`;
+      const invoiceBucket = getInvoiceBucket(providerBucket, orderKey, orderLabel);
+      const perOrderAmount = amount / orders.length;
 
-    items.forEach((item) => {
-      const invoiceLabel = item.invoice ? `Factura ${item.invoice}` : 'Factura -';
-      const invoiceKey = item.invoice ? `inv:${item.invoice}` : 'inv:';
-      const invoiceBucket = getInvoiceBucket(providerBucket, invoiceKey, invoiceLabel);
+      const productBucket = getProductBucket(invoiceBucket, 'total', orderLabel);
 
-      const productLabel = item.product_name || 'Producto -';
-      const productKey = item.product_id ? `prod:${item.product_id}` : `prod:${productLabel}`;
-      const productBucket = getProductBucket(invoiceBucket, productKey, productLabel);
-
-      let amount = Number(item.amount || item.quantity || 0);
-      if (!amount && items.length === 1) {
-        amount = Number(data.amount || 0);
-      }
-
-      weekBucket.total += amount;
-      providerBucket.total += amount;
-      invoiceBucket.total += amount;
-      productBucket.total += amount;
+      weekBucket.total += perOrderAmount;
+      providerBucket.total += perOrderAmount;
+      invoiceBucket.total += perOrderAmount;
+      productBucket.total += perOrderAmount;
       if (isPaid) {
-        weekBucket.paid_total += amount;
-        providerBucket.paid_total += amount;
-        invoiceBucket.paid_total += amount;
-        productBucket.paid_total += amount;
+        weekBucket.paid_total += perOrderAmount;
+        providerBucket.paid_total += perOrderAmount;
+        invoiceBucket.paid_total += perOrderAmount;
+        productBucket.paid_total += perOrderAmount;
       } else {
-        weekBucket.pending_total += amount;
-        providerBucket.pending_total += amount;
-        invoiceBucket.pending_total += amount;
-        productBucket.pending_total += amount;
+        weekBucket.pending_total += perOrderAmount;
+        providerBucket.pending_total += perOrderAmount;
+        invoiceBucket.pending_total += perOrderAmount;
+        productBucket.pending_total += perOrderAmount;
       }
     });
   });

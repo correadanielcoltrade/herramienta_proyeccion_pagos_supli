@@ -88,57 +88,34 @@ def build_provider_summary(payments):
     return providers
 
 
+def priority_from_category(provider_cat):
+    cat = (provider_cat or '').strip()
+    if cat == 'Alta':
+        return 'Alta'
+    if cat == 'Media':
+        return 'Media'
+    return 'Baja'
+
+
 def build_gantt_data(payments):
-    return build_gantt_data_with_refs(payments, providers=None, products=None)
+    return build_gantt_data_with_refs(payments, providers=None)
 
 
-def build_gantt_data_with_refs(payments, providers=None, products=None):
+def build_gantt_data_with_refs(payments, providers=None):
     priority_rank = {'Baja': 1, 'Media': 2, 'Alta': 3}
-    category_rank = {'Normal': 0, 'Baja': 1, 'Media': 2, 'Alta': 3}
     category_values = {'ALTA': 'Alta', 'MEDIA': 'Media', 'BAJA': 'Baja', 'NORMAL': 'Normal'}
     week_set = set()
     vendor_map = {}
     provider_index = {}
-    product_index = {}
 
     if providers:
         provider_index = {str(p.get('id')): p for p in providers}
-    if products:
-        product_index = {str(p.get('id')): p for p in products}
 
     def _normalize_category(value):
         if not value:
             return 'Normal'
         key = str(value).strip().upper()
         return category_values.get(key, 'Normal')
-
-    def max_category(categories):
-        best = 'Normal'
-        best_rank = -1
-        for cat in categories:
-            normalized = _normalize_category(cat)
-            rank = category_rank.get(normalized or 'Normal', 0)
-            if rank > best_rank:
-                best_rank = rank
-                best = normalized or 'Normal'
-        return best or 'Normal'
-
-    def priority_from_categories(provider_cat, product_cat):
-        provider_norm = _normalize_category(provider_cat)
-        product_norm = _normalize_category(product_cat)
-
-        # Matriz de prioridad (Proveedor x Producto)
-        # Producto Alta  -> Alta
-        # Producto Media -> Alta si Proveedor Alta, sino Media
-        # Producto Baja  -> Media si Proveedor Alta/Media, sino Baja
-        provider_level = provider_norm if provider_norm in ('Alta', 'Media', 'Baja') else 'Baja'
-        product_level = product_norm if product_norm in ('Alta', 'Media', 'Baja') else 'Baja'
-
-        if product_level == 'Alta':
-            return 'Alta'
-        if product_level == 'Media':
-            return 'Alta' if provider_level == 'Alta' else 'Media'
-        return 'Baja' if provider_level == 'Baja' else 'Media'
 
     for p in payments:
         data = p.get('data_json', {})
@@ -150,9 +127,15 @@ def build_gantt_data_with_refs(payments, providers=None, products=None):
         vendor_id = data.get('provider_id')
         provider = provider_index.get(str(vendor_id)) if vendor_id is not None else None
         provider_data = provider.get('data_json', {}) if provider else {}
-        vendor_name = (provider_data.get('name') if provider else None) or data.get('provider_name') or 'Sin proveedor'
-        vendor_category = _normalize_category(provider_data.get('category') or data.get('provider_category'))
-        key = str(vendor_id) if vendor_id is not None else f"name:{vendor_name}"
+        vendor_name = (
+            (provider_data.get('name') if provider else None)
+            or data.get('provider_name')
+            or 'Sin proveedor'
+        )
+        vendor_category = _normalize_category(
+            provider_data.get('category') or data.get('provider_category')
+        )
+        key = str(vendor_id) if vendor_id is not None else f'name:{vendor_name}'
         vendor_entry = vendor_map.setdefault(key, {
             'vendor_id': vendor_id,
             'vendor_name': vendor_name,
@@ -179,31 +162,24 @@ def build_gantt_data_with_refs(payments, providers=None, products=None):
             cell['paid_total'] += payment_amount
         else:
             cell['pending_total'] += payment_amount
-        cell['status'] = 'Pagado' if cell['pending_total'] == 0 and cell['paid_total'] > 0 else 'Pendiente'
-        provider_category = vendor_category or 'Normal'
-        item_categories = []
-        items = data.get('items') or []
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            product_id = item.get('product_id')
-            product = product_index.get(str(product_id)) if product_id is not None else None
-            product_data = product.get('data_json', {}) if product else {}
-            product_category = (product_data.get('category') if product else None) or item.get('product_category')
-            if product_category:
-                item_categories.append(product_category)
+        cell['status'] = (
+            'Pagado'
+            if cell['pending_total'] == 0 and cell['paid_total'] > 0
+            else 'Pendiente'
+        )
+
+        orders = data.get('orders', [])
+        if not isinstance(orders, list):
+            orders = [str(orders)] if orders else []
+        for order in orders:
             detail = {
-                'invoice': item.get('invoice'),
-                'product_name': (product_data.get('label') or product_data.get('description') or product_data.get('name')) if product else item.get('product_name'),
-                'product_category': _normalize_category(product_category),
-                'amount': float(item.get('amount', 0) or item.get('quantity', 0) or 0),
+                'order': str(order),
+                'amount': payment_amount / len(orders) if orders else payment_amount,
                 'status': payment_status,
             }
             cell['details'].append(detail)
-        if not item_categories and data.get('product_category'):
-            item_categories.append(data.get('product_category'))
-        product_category = max_category(item_categories)
-        priority = priority_from_categories(provider_category, product_category)
+
+        priority = priority_from_category(vendor_category)
         if priority_rank.get(priority, 0) > priority_rank.get(cell['priority'], 0):
             cell['priority'] = priority
 

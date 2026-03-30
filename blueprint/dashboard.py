@@ -112,8 +112,7 @@ def dashboard_gantt():
 
     payments = load_records('pp_payments')
     providers = load_records('pp_providers')
-    products = load_records('pp_products')
-    gantt = build_gantt_data_with_refs(payments, providers=providers, products=products)
+    gantt = build_gantt_data_with_refs(payments, providers=providers)
     set_cached(cache_key, gantt, ttl=30)
     return jsonify(gantt), 200
 

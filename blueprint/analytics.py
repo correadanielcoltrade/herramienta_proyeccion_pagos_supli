@@ -171,10 +171,19 @@ def build_gantt_data_with_refs(payments, providers=None):
         orders = data.get('orders', [])
         if not isinstance(orders, list):
             orders = [str(orders)] if orders else []
+        order_count = len(orders)
         for order in orders:
+            if isinstance(order, dict):
+                order_label = str(order.get('order') or order.get('oc') or '-')
+                order_amount = float(order.get('amount', 0) or 0)
+                if order_amount == 0 and order_count:
+                    order_amount = payment_amount / order_count
+            else:
+                order_label = str(order)
+                order_amount = payment_amount / order_count if order_count else payment_amount
             detail = {
-                'order': str(order),
-                'amount': payment_amount / len(orders) if orders else payment_amount,
+                'order': order_label,
+                'amount': order_amount,
                 'status': payment_status,
             }
             cell['details'].append(detail)

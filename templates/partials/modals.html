@@ -187,10 +187,6 @@
             </select>
           </label>
           <label class="field">
-            <span class="field-label">Valor Pendiente por Pagar</span>
-            <input type="number" name="amount" min="0" step="0.01" placeholder="0.00" required>
-          </label>
-          <label class="field">
             <span class="field-label">Fecha de pago</span>
             <input type="date" name="date" required>
           </label>
@@ -209,7 +205,16 @@
           <h4 class="modal-section-title">OC / Embarques</h4>
           <button type="button" class="btn outline small" id="add-order-btn">+ Agregar OC</button>
         </div>
+        <div class="orders-head">
+          <span>OC / Embarque</span>
+          <span>Valor a Pagar</span>
+          <span></span>
+        </div>
         <div id="orders-container"></div>
+        <div class="orders-total-row">
+          <span>Total</span>
+          <span id="orders-grand-total">$ 0</span>
+        </div>
       </div>
 
       <div class="modal-actions">

@@ -151,24 +151,47 @@ def _normalize_payment_payload(payload, providers, provider_index):
     orders_raw = (
         payload.get('orders')
         or payload.get('ordenes')
-        or payload.get('order')
-        or payload.get('oc_embarque')
-        or payload.get('oc')
-        or ''
+        or []
     )
+    # Normaliza orders como lista de {order, amount}
+    orders = []
     if isinstance(orders_raw, list):
-        orders = [str(o).strip() for o in orders_raw if str(o).strip()]
+        for o in orders_raw:
+            if isinstance(o, dict):
+                label = str(o.get('order') or o.get('oc') or '').strip()
+                amt = _amount(o.get('amount') or o.get('monto') or 0)
+                if label:
+                    orders.append({'order': label, 'amount': amt})
+            elif o:
+                orders.append({'order': str(o).strip(), 'amount': 0.0})
     elif isinstance(orders_raw, str) and orders_raw.strip():
-        orders = [o.strip() for o in orders_raw.split(',') if o.strip()]
-    else:
-        orders = []
+        for o in orders_raw.split(','):
+            label = o.strip()
+            if label:
+                orders.append({'order': label, 'amount': 0.0})
 
-    amount = _amount(
-        payload.get('amount')
-        or payload.get('monto')
-        or payload.get('valor')
-        or payload.get('valor_pendiente')
-    )
+    # Si viene order/oc_embarque como campos simples (Excel import compat)
+    single_order = (payload.get('order') or payload.get('oc_embarque') or payload.get('oc') or '').strip()
+    if single_order and not orders:
+        single_amount = _amount(payload.get('valor_pendiente') or payload.get('amount') or payload.get('monto') or 0)
+        orders.append({'order': single_order, 'amount': single_amount})
+
+    # Calcula el total como suma de montos de OCs; si no hay montos usa amount del payload
+    orders_total = sum(o['amount'] for o in orders)
+    if orders_total > 0:
+        amount = orders_total
+    else:
+        amount = _amount(
+            payload.get('amount')
+            or payload.get('monto')
+            or payload.get('valor')
+            or payload.get('valor_pendiente')
+        )
+        # Distribuye el amount entre las OCs si no tenían monto
+        if amount > 0 and orders:
+            per_order = round(amount / len(orders), 2)
+            for o in orders:
+                o['amount'] = per_order
 
     date_value = payload.get('date') or payload.get('fecha')
     parsed_date = _parse_date(date_value)

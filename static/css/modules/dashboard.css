@@ -262,7 +262,7 @@
 #dashboard-pivot-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 900px;
 }
 
 #dashboard-pivot-table th,
@@ -292,11 +292,11 @@
   font-weight: 600;
 }
 
-.pivot-row.pivot-invoice {
+.pivot-row.pivot-type {
   background: #fdfbf7;
 }
 
-.pivot-row.pivot-product {
+.pivot-row.pivot-order {
   background: #ffffff;
 }
 
@@ -350,11 +350,11 @@
   padding-left: 20px;
 }
 
-.pivot-level-2 .pivot-invoice-cell {
+.pivot-level-2 .pivot-type-cell {
   padding-left: 32px;
 }
 
-.pivot-level-3 .pivot-product-cell {
+.pivot-level-3 .pivot-order-cell {
   padding-left: 44px;
 }
 
@@ -451,7 +451,7 @@
 
 .gantt-tooltip-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1.2fr) minmax(150px, 1.4fr) minmax(110px, 1.1fr) auto;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(110px, 0.9fr) minmax(140px, 1.1fr);
   gap: 6px;
   padding: 6px 8px;
   border-radius: 8px;
@@ -471,6 +471,11 @@
   text-align: right;
   font-weight: 600;
   color: #4b3d2b;
+}
+
+.gantt-tooltip-type {
+  color: #6b5e4c;
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {

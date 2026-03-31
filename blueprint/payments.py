@@ -16,6 +16,7 @@ CATEGORY_VALUES = {'ALTA': 'Alta', 'MEDIA': 'Media', 'BAJA': 'Baja'}
 
 PROVIDER_STATUS_VALUES = {'NACIONAL': 'Nacional', 'INTERNACIONAL': 'Internacional'}
 PROVIDER_TYPE_VALUES = {'COMERCIAL': 'Comercial', 'ADMINISTRATIVO': 'Administrativo'}
+PAYMENT_TYPE_VALUES = {'NACIONAL': 'Nacional', 'INTERNACIONAL': 'Internacional'}
 
 
 def _normalize_status(value):
@@ -44,6 +45,13 @@ def _normalize_provider_type(value):
         return 'Comercial'
     key = str(value).strip().upper()
     return PROVIDER_TYPE_VALUES.get(key, 'Comercial')
+
+
+def _normalize_payment_type(value, fallback='Nacional'):
+    if not value:
+        return fallback
+    key = str(value).strip().upper()
+    return PAYMENT_TYPE_VALUES.get(key, fallback)
 
 
 def _parse_date(value):
@@ -147,6 +155,10 @@ def _normalize_payment_payload(payload, providers, provider_index):
         provider = provider_index.get(provider_name.lower())
 
     provider_category = provider['data_json'].get('category') if provider else 'Normal'
+    provider_status = provider['data_json'].get('status', 'Nacional') if provider else 'Nacional'
+    provider_type = provider['data_json'].get('type', 'Comercial') if provider else 'Comercial'
+    payment_type_raw = payload.get('payment_type') or payload.get('tipo_pago')
+    payment_type = _normalize_payment_type(payment_type_raw, provider_status)
 
     orders_raw = (
         payload.get('orders')
@@ -201,8 +213,9 @@ def _normalize_payment_payload(payload, providers, provider_index):
         'provider_id': provider['id'] if provider else None,
         'provider_name': provider['data_json'].get('name') if provider else provider_name or None,
         'provider_category': provider_category,
-        'provider_status': provider['data_json'].get('status', 'Nacional') if provider else 'Nacional',
-        'provider_type': provider['data_json'].get('type', 'Comercial') if provider else 'Comercial',
+        'provider_status': provider_status,
+        'provider_type': provider_type,
+        'payment_type': payment_type,
         'orders': orders,
         'date': parsed_date.date().isoformat() if parsed_date else None,
         'week': week_fields.get('week'),
@@ -409,7 +422,7 @@ def bulk_delete_payments():
 @payments_bp.route('/templates/payments', methods=['GET'])
 @auth_required(['ADMIN'])
 def template_payments():
-    headers = ['payment_id', 'provider_name', 'order', 'valor_pendiente', 'fecha', 'estado']
+    headers = ['payment_id', 'provider_name', 'tipo_pago', 'order', 'valor_pendiente', 'fecha', 'estado']
     buffer = build_excel_template(headers, sheet_name='Pagos')
     return send_file(
         buffer,
@@ -437,6 +450,7 @@ def upload_payments():
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
 
     # Group rows by payment_id when present; otherwise each row is its own payment
+    # Preserve per-OC amounts so we don't average them out later.
     groups = {}
     for record in records:
         try:
@@ -444,19 +458,25 @@ def upload_payments():
             key = pid if pid else f'_single_{id(record)}'
             if key not in groups:
                 groups[key] = {'base': dict(record), 'orders': [], 'amount': 0.0}
+            else:
+                # Preserve tipo_pago/payment_type if missing in base and present in later rows.
+                for field in ('tipo_pago', 'payment_type'):
+                    if not groups[key]['base'].get(field) and record.get(field):
+                        groups[key]['base'][field] = record.get(field)
             order_val = str(
                 record.get('order', '')
                 or record.get('oc', '')
                 or record.get('oc_embarque', '')
                 or ''
             ).strip()
-            if order_val:
-                groups[key]['orders'].append(order_val)
-            groups[key]['amount'] += _amount(
+            row_amount = _amount(
                 record.get('valor_pendiente')
                 or record.get('amount')
                 or record.get('monto')
             )
+            if order_val:
+                groups[key]['orders'].append({'order': order_val, 'amount': row_amount})
+            groups[key]['amount'] += row_amount
         except Exception:
             continue
 

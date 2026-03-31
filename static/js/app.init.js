@@ -48,6 +48,10 @@ if (el.paymentOpen && el.paymentModal) {
   el.paymentOpen.addEventListener('click', () => {
     if (el.paymentForm) {
       el.paymentForm.reset();
+      const paymentTypeSel = el.paymentForm.querySelector('[name="payment_type"]');
+      if (paymentTypeSel) {
+        paymentTypeSel.value = 'Nacional';
+      }
     }
     if (el.paymentModalTitle) {
       el.paymentModalTitle.textContent = 'Nuevo pago';

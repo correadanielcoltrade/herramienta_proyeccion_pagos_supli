@@ -38,6 +38,11 @@ function clearOrdersForm() {
   addOrderRow();
 }
 
+function getPaymentType(data) {
+  if (!data) return '-';
+  return data.payment_type || data.tipo_pago || data.provider_status || '-';
+}
+
 function getOrdersFromForm() {
   const rows = document.querySelectorAll('#orders-container .order-row');
   const orders = [];
@@ -114,6 +119,10 @@ function openEditPaymentModal(payment) {
     el.paymentForm.querySelector('[name="id"]').value = payment.id;
     el.paymentForm.querySelector('[name="date"]').value = data.date || '';
     el.paymentForm.querySelector('[name="status"]').value = data.status || 'Pendiente';
+    const paymentTypeSel = el.paymentForm.querySelector('[name="payment_type"]');
+    if (paymentTypeSel) {
+      paymentTypeSel.value = data.payment_type || data.tipo_pago || data.provider_status || 'Nacional';
+    }
     const providerSel = el.paymentForm.querySelector('[name="provider_id"]');
     if (providerSel) {
       populateProviderSelect(providerSel);
@@ -141,6 +150,7 @@ function renderPayments(payments) {
   const isAdmin = state.role === 'ADMIN';
   payments.forEach((p) => {
     const data = p.data_json;
+    const paymentType = getPaymentType(data);
     const orders = Array.isArray(data.orders) ? data.orders : [];
     const orderCount = orders.length;
     const orderLabels = orders.map((o) => (typeof o === 'object' ? o.order : o)).filter(Boolean);
@@ -153,6 +163,7 @@ function renderPayments(payments) {
       <td class="catalog-select-col"><input type="checkbox" class="catalog-select" value="${p.id}"></td>
       <td>${p.id}</td>
       <td>${data.provider_name || '-'}</td>
+      <td>${paymentType}</td>
       <td>
         <button type="button" class="btn ghost small expand-orders-btn" aria-expanded="false">
           <span class="expand-icon">▶</span> ${orderCount} OC${orderCount !== 1 ? 's' : ''}
@@ -183,7 +194,7 @@ function renderPayments(payments) {
       : '<tr><td colspan="2" class="order-detail-empty">Sin OC registradas</td></tr>';
 
     detailsTr.innerHTML = `
-      <td colspan="9" class="order-details-cell">
+      <td colspan="10" class="order-details-cell">
         <div class="order-details-inner">
           <table class="order-details-table">
             <thead><tr><th>OC / Embarque</th><th>Valor</th></tr></thead>

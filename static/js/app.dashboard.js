@@ -153,11 +153,16 @@ function setGanttTooltipContent(tooltip, data) {
     order.className = 'gantt-tooltip-invoice';
     order.textContent = detail.order ? `OC/Emb: ${detail.order}` : 'OC/Emb: -';
 
+    const payType = document.createElement('span');
+    payType.className = 'gantt-tooltip-type';
+    payType.textContent = detail.payment_type ? `Tipo: ${detail.payment_type}` : 'Tipo: -';
+
     const amount = document.createElement('span');
     amount.className = 'gantt-tooltip-amount';
     amount.textContent = formatCurrency(detail.amount || 0);
 
     row.appendChild(order);
+    row.appendChild(payType);
     row.appendChild(amount);
     list.appendChild(row);
   });
@@ -317,29 +322,29 @@ function renderDashboardPivot(payments) {
         total: 0,
         paid_total: 0,
         pending_total: 0,
-        invoices: new Map(),
+        types: new Map(),
       });
     }
     return weekBucket.providers.get(key);
   };
 
-  const getInvoiceBucket = (providerBucket, key, label) => {
-    if (!providerBucket.invoices.has(key)) {
-      providerBucket.invoices.set(key, {
+  const getTypeBucket = (providerBucket, key, label) => {
+    if (!providerBucket.types.has(key)) {
+      providerBucket.types.set(key, {
         key,
         label,
         total: 0,
         paid_total: 0,
         pending_total: 0,
-        products: new Map(),
+        orders: new Map(),
       });
     }
-    return providerBucket.invoices.get(key);
+    return providerBucket.types.get(key);
   };
 
-  const getProductBucket = (invoiceBucket, key, label) => {
-    if (!invoiceBucket.products.has(key)) {
-      invoiceBucket.products.set(key, {
+  const getOrderBucket = (typeBucket, key, label) => {
+    if (!typeBucket.orders.has(key)) {
+      typeBucket.orders.set(key, {
         key,
         label,
         total: 0,
@@ -347,7 +352,7 @@ function renderDashboardPivot(payments) {
         pending_total: 0,
       });
     }
-    return invoiceBucket.products.get(key);
+    return typeBucket.orders.get(key);
   };
 
   payments.forEach((payment) => {
@@ -364,30 +369,33 @@ function renderDashboardPivot(payments) {
     const providerBucket = getProviderBucket(weekBucket, providerKey, providerName);
     const isPaid = data.status === 'Pagado';
     const amount = Number(data.amount || 0);
+    const paymentType = data.payment_type || data.tipo_pago || data.provider_status || 'Nacional';
+    const typeKey = paymentType || 'Sin tipo';
+    const typeBucket = getTypeBucket(providerBucket, `type:${typeKey}`, paymentType);
 
     const orders = Array.isArray(data.orders) && data.orders.length ? data.orders : ['—'];
     orders.forEach((order) => {
-      const orderLabel = order !== '—' ? order : 'Sin OC';
-      const orderKey = `order:${orderLabel}`;
-      const invoiceBucket = getInvoiceBucket(providerBucket, orderKey, orderLabel);
-      const perOrderAmount = amount / orders.length;
-
-      const productBucket = getProductBucket(invoiceBucket, 'total', orderLabel);
+      const rawLabel = (order && typeof order === 'object') ? order.order : order;
+      const orderLabel = rawLabel && rawLabel !== '—' ? rawLabel : 'Sin OC';
+      const orderKey = orderLabel || 'Sin OC';
+      const orderBucket = getOrderBucket(typeBucket, `order:${orderKey}`, orderLabel);
+      const orderAmount = (order && typeof order === 'object') ? Number(order.amount) : NaN;
+      const perOrderAmount = Number.isFinite(orderAmount) ? orderAmount : (amount / orders.length);
 
       weekBucket.total += perOrderAmount;
       providerBucket.total += perOrderAmount;
-      invoiceBucket.total += perOrderAmount;
-      productBucket.total += perOrderAmount;
+      typeBucket.total += perOrderAmount;
+      orderBucket.total += perOrderAmount;
       if (isPaid) {
         weekBucket.paid_total += perOrderAmount;
         providerBucket.paid_total += perOrderAmount;
-        invoiceBucket.paid_total += perOrderAmount;
-        productBucket.paid_total += perOrderAmount;
+        typeBucket.paid_total += perOrderAmount;
+        orderBucket.paid_total += perOrderAmount;
       } else {
         weekBucket.pending_total += perOrderAmount;
         providerBucket.pending_total += perOrderAmount;
-        invoiceBucket.pending_total += perOrderAmount;
-        productBucket.pending_total += perOrderAmount;
+        typeBucket.pending_total += perOrderAmount;
+        orderBucket.pending_total += perOrderAmount;
       }
     });
   });
@@ -421,7 +429,7 @@ function renderDashboardPivot(payments) {
     row.dataset.collapsed = collapsedByDefault ? 'true' : 'false';
   };
 
-  const makeRow = (level, type, weekText, providerText, invoiceText, productText, total, statusText, keys, hasChildren) => {
+  const makeRow = (level, type, weekText, providerText, typeText, orderText, total, statusText, keys, hasChildren) => {
     const tr = document.createElement('tr');
     tr.className = `pivot-row pivot-${type} pivot-level-${level}`;
     tr.dataset.level = String(level);
@@ -433,29 +441,29 @@ function renderDashboardPivot(payments) {
 
     const weekCell = makeCell(weekText, 'pivot-week-cell');
     const providerCell = makeCell(providerText, 'pivot-provider-cell');
-    const invoiceCell = makeCell(invoiceText, 'pivot-invoice-cell');
-    const productCell = makeCell(productText, 'pivot-product-cell');
+    const typeCell = makeCell(typeText, 'pivot-type-cell');
+    const orderCell = makeCell(orderText, 'pivot-order-cell');
 
     tr.appendChild(weekCell);
     tr.appendChild(providerCell);
-    tr.appendChild(invoiceCell);
-    tr.appendChild(productCell);
+    tr.appendChild(typeCell);
+    tr.appendChild(orderCell);
     tr.appendChild(makeCell(formatCurrency(total || 0), 'pivot-total-cell'));
     tr.appendChild(makeCell(statusText || '-', 'pivot-status-cell'));
 
     if (hasChildren) {
       if (type === 'week') attachPivotToggle(weekCell, tr, weekText, true);
       if (type === 'provider') attachPivotToggle(providerCell, tr, providerText, true);
-      if (type === 'invoice') attachPivotToggle(invoiceCell, tr, invoiceText, true);
+      if (type === 'type') attachPivotToggle(typeCell, tr, typeText, true);
     }
     return tr;
   };
 
-  const buildRowKey = (level, weekKey, providerKey, invoiceKey) => {
+  const buildRowKey = (level, weekKey, providerKey, typeKey, orderKey) => {
     if (level === 0) return `week:${weekKey}`;
     if (level === 1) return `week:${weekKey}|provider:${providerKey}`;
-    if (level === 2) return `week:${weekKey}|provider:${providerKey}|invoice:${invoiceKey}`;
-    if (level === 3) return `week:${weekKey}|provider:${providerKey}|invoice:${invoiceKey}|product`;
+    if (level === 2) return `week:${weekKey}|provider:${providerKey}|type:${typeKey}`;
+    if (level === 3) return `week:${weekKey}|provider:${providerKey}|type:${typeKey}|order:${orderKey}`;
     return '';
   };
 
@@ -475,37 +483,38 @@ function renderDashboardPivot(payments) {
     const providers = [...weekBucket.providers.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
     providers.forEach((providerBucket) => {
       const providerKey = providerBucket.key;
-      const hasInvoices = providerBucket.invoices.size > 0;
+      const hasTypes = providerBucket.types.size > 0;
       const providerRowKey = buildRowKey(1, weekKey, providerKey);
       const providerStatus = providerBucket.pending_total === 0 && providerBucket.total > 0 ? 'Pagado' : 'Pendiente';
       el.dashboardPivotBody.appendChild(
         makeRow(1, 'provider', '', providerBucket.label, '', '', providerBucket.total, providerStatus, {
           rowKey: providerRowKey,
           parentKey: weekRowKey,
-        }, hasInvoices)
+        }, hasTypes)
       );
 
-      const invoices = [...providerBucket.invoices.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
-      invoices.forEach((invoiceBucket) => {
-        const invoiceKey = invoiceBucket.key;
-        const hasProducts = invoiceBucket.products.size > 0;
-        const invoiceRowKey = buildRowKey(2, weekKey, providerKey, invoiceKey);
-        const invoiceStatus = invoiceBucket.pending_total === 0 && invoiceBucket.total > 0 ? 'Pagado' : 'Pendiente';
+      const types = [...providerBucket.types.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
+      types.forEach((typeBucket) => {
+        const typeKey = typeBucket.label || typeBucket.key;
+        const hasOrders = typeBucket.orders.size > 0;
+        const typeRowKey = buildRowKey(2, weekKey, providerKey, typeKey);
+        const typeStatus = typeBucket.pending_total === 0 && typeBucket.total > 0 ? 'Pagado' : 'Pendiente';
         el.dashboardPivotBody.appendChild(
-          makeRow(2, 'invoice', '', '', invoiceBucket.label, '', invoiceBucket.total, invoiceStatus, {
-            rowKey: invoiceRowKey,
+          makeRow(2, 'type', '', '', typeBucket.label, '', typeBucket.total, typeStatus, {
+            rowKey: typeRowKey,
             parentKey: providerRowKey,
-          }, hasProducts)
+          }, hasOrders)
         );
 
-        const products = [...invoiceBucket.products.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
-        products.forEach((productBucket) => {
-          const productRowKey = buildRowKey(3, weekKey, providerKey, invoiceKey);
-          const productStatus = productBucket.pending_total === 0 && productBucket.total > 0 ? 'Pagado' : 'Pendiente';
+        const orders = [...typeBucket.orders.values()].sort((a, b) => a.label.localeCompare(b.label, 'es'));
+        orders.forEach((orderBucket) => {
+          const orderKey = orderBucket.label || orderBucket.key;
+          const orderRowKey = buildRowKey(3, weekKey, providerKey, typeKey, orderKey);
+          const orderStatus = orderBucket.pending_total === 0 && orderBucket.total > 0 ? 'Pagado' : 'Pendiente';
           el.dashboardPivotBody.appendChild(
-            makeRow(3, 'product', '', '', '', productBucket.label, productBucket.total, productStatus, {
-              rowKey: productRowKey,
-              parentKey: invoiceRowKey,
+            makeRow(3, 'order', '', '', '', orderBucket.label, orderBucket.total, orderStatus, {
+              rowKey: orderRowKey,
+              parentKey: typeRowKey,
             }, false)
           );
         });

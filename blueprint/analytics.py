@@ -158,6 +158,7 @@ def build_gantt_data_with_refs(payments, providers=None):
         payment_amount = float(data.get('amount', 0) or 0)
         cell['total'] += payment_amount
         payment_status = data.get('status', 'Pendiente')
+        payment_type = data.get('payment_type') or data.get('tipo_pago') or data.get('provider_status') or 'Nacional'
         if payment_status == 'Pagado':
             cell['paid_total'] += payment_amount
         else:
@@ -185,6 +186,7 @@ def build_gantt_data_with_refs(payments, providers=None):
                 'order': order_label,
                 'amount': order_amount,
                 'status': payment_status,
+                'payment_type': payment_type,
             }
             cell['details'].append(detail)
 

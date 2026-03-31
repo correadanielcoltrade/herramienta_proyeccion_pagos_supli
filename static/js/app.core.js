@@ -50,6 +50,7 @@ const el = {
   providersList: document.getElementById('providers-list'),
   ganttChart: document.getElementById('gantt-chart'),
   ganttExportWeek: document.getElementById('gantt-export-week'),
+  ganttPaymentTypeFilter: document.getElementById('gantt-payment-type-filter'),
   ganttExportBtn: document.getElementById('gantt-export-btn'),
   dashboardPivotBody: document.getElementById('dashboard-pivot-body'),
   filterProvider: document.getElementById('filter-provider'),

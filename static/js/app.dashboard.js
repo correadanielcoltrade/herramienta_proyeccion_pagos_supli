@@ -80,14 +80,25 @@ async function loadGantt() {
     const yearSel = document.getElementById('gantt-year-filter');
     if (yearSel) {
       yearSel.addEventListener('change', () => {
-        if (ganttData) renderGantt(ganttData, yearSel.value);
-        renderDashboardPivot(allPayments, yearSel.value);
+        const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
+        if (ganttData) renderGantt(ganttData, yearSel.value, pt);
+        renderDashboardPivot(allPayments, yearSel.value, pt);
       });
       ganttYearFilterBound = true;
     }
   }
+  if (!ganttPaymentFilterBound && el.ganttPaymentTypeFilter) {
+    el.ganttPaymentTypeFilter.addEventListener('change', () => {
+      const yearSel = document.getElementById('gantt-year-filter');
+      const yr = yearSel ? yearSel.value : '';
+      if (ganttData) renderGantt(ganttData, yr, el.ganttPaymentTypeFilter.value);
+      renderDashboardPivot(allPayments, yr, el.ganttPaymentTypeFilter.value);
+    });
+    ganttPaymentFilterBound = true;
+  }
   const yearSel = document.getElementById('gantt-year-filter');
-  renderGantt(ganttData, yearSel ? yearSel.value : null);
+  const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
+  renderGantt(ganttData, yearSel ? yearSel.value : null, pt);
 }
 
 async function updateGanttStatus({ providerId, week, weekYear, status }) {
@@ -124,6 +135,7 @@ let ganttTooltipEl = null;
 let ganttData = null;
 let allPayments = [];
 let ganttYearFilterBound = false;
+let ganttPaymentFilterBound = false;
 
 function getGanttTooltip() {
   if (ganttTooltipEl && document.body.contains(ganttTooltipEl)) return ganttTooltipEl;
@@ -298,17 +310,27 @@ async function loadDashboardPivot() {
   if (!el.dashboardPivotBody) return;
   const response = await apiFetch('/payments');
   allPayments = await response.json() || [];
+  _populatePaymentTypeFilter(allPayments);
   const yearSel = document.getElementById('gantt-year-filter');
-  renderDashboardPivot(allPayments, yearSel ? yearSel.value : null);
+  const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
+  renderDashboardPivot(allPayments, yearSel ? yearSel.value : null, pt);
 }
 
-function renderDashboardPivot(payments, yearFilter) {
+function renderDashboardPivot(payments, yearFilter, paymentTypeFilter) {
   if (!el.dashboardPivotBody) return;
   el.dashboardPivotBody.innerHTML = '';
 
   if (yearFilter) {
     const yearNum = Number(yearFilter);
     payments = payments.filter((p) => Number((p.data_json || {}).week_year) === yearNum);
+  }
+
+  if (paymentTypeFilter) {
+    payments = payments.filter((p) => {
+      const data = p.data_json || {};
+      const type = data.payment_type || data.tipo_pago || data.provider_status || 'Nacional';
+      return type === paymentTypeFilter;
+    });
   }
 
   if (!payments.length) {
@@ -628,12 +650,36 @@ function _populateGanttYearFilter(gantt) {
   }
 }
 
+function _populatePaymentTypeFilter(payments) {
+  const sel = document.getElementById('gantt-payment-type-filter');
+  if (!sel) return;
+  const types = [
+    ...new Set(
+      payments
+        .map((p) => {
+          const data = p.data_json || {};
+          return data.payment_type || data.tipo_pago || data.provider_status || 'Nacional';
+        })
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'es'));
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">Todos los tipos</option>';
+  types.forEach((t) => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    sel.appendChild(opt);
+  });
+  if (currentVal && types.includes(currentVal)) sel.value = currentVal;
+}
+
 function _formatGanttValue(amount) {
   if (!amount || amount === 0) return '-';
   return '$ ' + Math.round(amount).toLocaleString('es-CO');
 }
 
-function renderGantt(gantt, yearFilter) {
+function renderGantt(gantt, yearFilter, paymentTypeFilter) {
   if (!el.ganttChart) return;
   let weeks = (gantt && gantt.weeks) || [];
   const vendors = (gantt && gantt.vendors) || [];
@@ -686,7 +732,18 @@ function renderGantt(gantt, yearFilter) {
 
     weeks.forEach((weekObj) => {
       const key = weekObj.key;
-      const entry = (vendor.weeks && vendor.weeks[key]) || null;
+      let entry = (vendor.weeks && vendor.weeks[key]) || null;
+      if (entry && paymentTypeFilter) {
+        const filteredDetails = (entry.details || []).filter(
+          (d) => (d.payment_type || 'Nacional') === paymentTypeFilter
+        );
+        if (!filteredDetails.length) {
+          entry = null;
+        } else {
+          const filteredTotal = filteredDetails.reduce((sum, d) => sum + (d.amount || 0), 0);
+          entry = { ...entry, total: filteredTotal, details: filteredDetails };
+        }
+      }
       const cell = document.createElement('div');
       cell.className = 'gantt-cell';
       if (entry) {

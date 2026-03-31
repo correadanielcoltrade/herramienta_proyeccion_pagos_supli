@@ -91,12 +91,19 @@ async function handleUpload(evt) {
   evt.preventDefault();
   const formData = new FormData(el.uploadForm);
   try {
-    await apiFetch('/payments/upload', { method: 'POST', body: formData });
+    const response = await apiFetch('/payments/upload', { method: 'POST', body: formData });
+    const result = await response.json().catch(() => ({}));
+    const created = Number(result && result.created);
+    if (Number.isFinite(created)) {
+      alert(`Carga masiva de pagos completada. Registros creados: ${created}.`);
+    } else {
+      alert('Carga masiva de pagos completada correctamente.');
+    }
     el.uploadForm.reset();
     await loadDashboard();
     setActiveModule('payments');
   } catch (error) {
-    alert(error.message);
+    alert(`Error en la carga masiva de pagos: ${error.message}`);
   }
 }
 

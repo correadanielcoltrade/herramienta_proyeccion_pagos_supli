@@ -64,6 +64,8 @@ const el = {
   brandOpen: document.getElementById('brand-open'),
   brandSelectAll: document.getElementById('brand-select-all'),
   brandBulkDelete: document.getElementById('brand-bulk-delete'),
+  brandFilterCategory: document.getElementById('brand-filter-category'),
+  brandExport: document.getElementById('brand-export'),
   brandTable: document.querySelector('#brands-table tbody'),
   brandUploadForm: document.getElementById('brand-upload-form'),
   brandTemplateBtn: document.getElementById('brand-template'),
@@ -72,6 +74,8 @@ const el = {
   vendorOpen: document.getElementById('vendor-open'),
   vendorSelectAll: document.getElementById('vendor-select-all'),
   vendorBulkDelete: document.getElementById('vendor-bulk-delete'),
+  vendorFilterCategory: document.getElementById('vendor-filter-category'),
+  vendorExport: document.getElementById('vendor-export'),
   vendorTable: document.querySelector('#vendors-table tbody'),
   vendorUploadForm: document.getElementById('vendor-upload-form'),
   vendorTemplateBtn: document.getElementById('vendor-template'),
@@ -80,6 +84,8 @@ const el = {
   productOpen: document.getElementById('product-open'),
   productSelectAll: document.getElementById('product-select-all'),
   productBulkDelete: document.getElementById('product-bulk-delete'),
+  productFilterCategory: document.getElementById('product-filter-category'),
+  productExport: document.getElementById('product-export'),
   productTable: document.querySelector('#products-table tbody'),
   productUploadForm: document.getElementById('product-upload-form'),
   productTemplateBtn: document.getElementById('product-template'),
@@ -282,7 +288,8 @@ function applyPagination(tableId) {
   if (!footer) return;
 
   const pagination = getPaginationState(tableId);
-  const rows = [...tbody.querySelectorAll('tr')].filter((r) => !r.dataset.paginationSkip);
+  // :scope > tr — only direct children of tbody, avoids counting <tr> inside nested sub-tables
+  const rows = [...tbody.querySelectorAll(':scope > tr')].filter((r) => !r.dataset.paginationSkip);
   const visibleRows = rows.filter((row) => row.dataset.filtered !== 'true');
   const total = visibleRows.length;
   const size = pagination.size || 10;
@@ -332,7 +339,8 @@ function applyTableSearch(tableId, query) {
   const tbody = table.querySelector('tbody');
   if (!tbody) return;
   const term = String(query || '').trim().toLowerCase();
-  const rows = [...tbody.querySelectorAll('tr')].filter((r) => !r.dataset.paginationSkip);
+  // :scope > tr — only direct children, avoids nested sub-table rows
+  const rows = [...tbody.querySelectorAll(':scope > tr')].filter((r) => !r.dataset.paginationSkip);
 
   rows.forEach((row) => {
     if (!term) {
@@ -493,6 +501,28 @@ function initProductCombobox(row, selectEl) {
   wrapper.dataset.bound = 'true';
 }
 
+
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</span>
+    <span class="toast-message">${message}</span>
+  `;
+  container.appendChild(toast);
+  // Trigger animation
+  requestAnimationFrame(() => toast.classList.add('toast-visible'));
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 4000);
+}
 
 async function downloadFile(url, filename) {
   try {

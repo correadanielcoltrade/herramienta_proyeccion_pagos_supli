@@ -1,3 +1,15 @@
+function formatUploadSummary(result) {
+  if (!result || typeof result !== 'object') {
+    return '';
+  }
+  const created = Number(result.created);
+  const updated = Number(result.updated);
+  const parts = [];
+  if (Number.isFinite(created)) parts.push(`creados: ${created}`);
+  if (Number.isFinite(updated)) parts.push(`actualizados: ${updated}`);
+  return parts.length ? ` (${parts.join(', ')})` : '';
+}
+
 el.loginForm.addEventListener('submit', handleLogin);
 if (el.forgotForm) {
   el.forgotForm.addEventListener('submit', handleForgotPassword);
@@ -63,10 +75,11 @@ if (el.brandForm) {
   el.brandUploadForm.addEventListener('submit', async (evt) => {
     evt.preventDefault();
     try {
-      await handleCatalogUpload(el.brandUploadForm, '/brands/upload');
+      const result = await handleCatalogUpload(el.brandUploadForm, '/brands/upload');
+      alert(`Carga masiva de marcas completada${formatUploadSummary(result)}.`);
       await loadBrands();
     } catch (error) {
-      alert(error.message);
+      alert(`Error en la carga masiva de marcas: ${error.message}`);
     }
   });
   el.brandTemplateBtn.addEventListener('click', () => downloadFile('/templates/brands', 'template_marcas.xlsx'));
@@ -88,13 +101,14 @@ if (el.vendorForm) {
   el.vendorUploadForm.addEventListener('submit', async (evt) => {
     evt.preventDefault();
     try {
-      await handleCatalogUpload(el.vendorUploadForm, '/providers/upload');
+      const result = await handleCatalogUpload(el.vendorUploadForm, '/providers/upload');
+      alert(`Carga masiva de proveedores completada${formatUploadSummary(result)}.`);
       await loadProviders();
       if (typeof loadGantt === 'function') {
         await loadGantt();
       }
     } catch (error) {
-      alert(error.message);
+      alert(`Error en la carga masiva de proveedores: ${error.message}`);
     }
   });
   el.vendorTemplateBtn.addEventListener('click', () => downloadFile('/templates/providers', 'template_proveedores.xlsx'));
@@ -121,13 +135,14 @@ if (el.productForm) {
   el.productUploadForm.addEventListener('submit', async (evt) => {
     evt.preventDefault();
     try {
-      await handleCatalogUpload(el.productUploadForm, '/products/upload');
+      const result = await handleCatalogUpload(el.productUploadForm, '/products/upload');
+      alert(`Carga masiva de productos completada${formatUploadSummary(result)}.`);
       await loadProducts();
       if (typeof loadGantt === 'function') {
         await loadGantt();
       }
     } catch (error) {
-      alert(error.message);
+      alert(`Error en la carga masiva de productos: ${error.message}`);
     }
   });
   el.productTemplateBtn.addEventListener('click', () => downloadFile('/templates/products', 'template_productos.xlsx'));
@@ -173,11 +188,60 @@ if (el.usersRefresh) {
   el.usersRefresh.addEventListener('click', loadUsers);
 }
 
-bindTableSearch(el.brandSearch, 'brands-table');
-bindTableSearch(el.vendorSearch, 'vendors-table');
-bindTableSearch(el.productSearch, 'products-table');
+bindCatalogFilters(el.brandSearch, el.brandFilterCategory, 'brands-table');
+bindCatalogFilters(el.vendorSearch, el.vendorFilterCategory, 'vendors-table');
+bindCatalogFilters(el.productSearch, el.productFilterCategory, 'products-table');
 bindTableSearch(el.userSearch, 'users-table');
 bindTableSearch(el.paymentSearch, 'payments-table');
+
+if (el.brandExport) {
+  el.brandExport.addEventListener('click', () => {
+    const cat = el.brandFilterCategory ? el.brandFilterCategory.value : '';
+    const q = el.brandSearch ? el.brandSearch.value.trim().toLowerCase() : '';
+    const rows = state.brands
+      .filter((b) => {
+        const c = (b.data_json.category || 'Normal');
+        const matchCat = !cat || c === cat;
+        const matchQ = !q || b.data_json.name.toLowerCase().includes(q);
+        return matchCat && matchQ;
+      })
+      .map((b) => [b.data_json.name, b.data_json.category || 'Normal']);
+    exportCatalogXLSX(['Marca', 'Categoría'], rows, 'marcas.xlsx');
+  });
+}
+
+if (el.vendorExport) {
+  el.vendorExport.addEventListener('click', () => {
+    const cat = el.vendorFilterCategory ? el.vendorFilterCategory.value : '';
+    const q = el.vendorSearch ? el.vendorSearch.value.trim().toLowerCase() : '';
+    const rows = state.providers
+      .filter((p) => {
+        const c = (p.data_json.category || 'Normal');
+        const matchCat = !cat || c === cat;
+        const matchQ = !q || p.data_json.name.toLowerCase().includes(q);
+        return matchCat && matchQ;
+      })
+      .map((p) => [p.data_json.name, p.data_json.category || 'Normal', p.data_json.status || 'Nacional', p.data_json.type || 'Comercial']);
+    exportCatalogXLSX(['Proveedor', 'Categoría', 'Estado', 'Tipo'], rows, 'proveedores.xlsx');
+  });
+}
+
+if (el.productExport) {
+  el.productExport.addEventListener('click', () => {
+    const cat = el.productFilterCategory ? el.productFilterCategory.value : '';
+    const q = el.productSearch ? el.productSearch.value.trim().toLowerCase() : '';
+    const rows = state.products
+      .filter((p) => {
+        const c = (p.data_json.category || 'Normal');
+        const matchCat = !cat || c === cat;
+        const text = `${p.data_json.sku || ''} ${p.data_json.description || ''} ${p.data_json.brand_name || ''}`.toLowerCase();
+        const matchQ = !q || text.includes(q);
+        return matchCat && matchQ;
+      })
+      .map((p) => [p.data_json.sku || '', p.data_json.description || p.data_json.label || '', p.data_json.brand_name || '', p.data_json.category || 'Normal']);
+    exportCatalogXLSX(['SKU', 'Descripción', 'Marca', 'Categoría'], rows, 'productos.xlsx');
+  });
+}
 
 document.querySelectorAll('.modal-close, .modal-cancel').forEach((btn) => {
   btn.addEventListener('click', () => {

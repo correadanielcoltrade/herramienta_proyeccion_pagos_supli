@@ -1,35 +1,56 @@
 <section class="panel module" id="module-brands">
-  <div class="module-header">
-    <h3>Marcas</h3>
-    <div class="header-actions catalog-header-actions">
-      <div class="catalog-search">
-        <input type="search" id="brands-search" class="table-search" placeholder="Buscar marca">
-      </div>
-      <div class="catalog-buttons">
-        <button class="btn primary" id="brand-open">Nueva marca</button>
-        <button class="btn danger" id="brand-bulk-delete" disabled>Eliminar seleccionados</button>
-      </div>
+  <div class="page-header">
+    <div>
+      <h2>Marcas</h2>
+      <p>Gestiona marcas y su categoría de prioridad.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn primary" id="brand-open">Nueva marca</button>
+      <button class="btn danger" id="brand-bulk-delete" disabled>Eliminar seleccionados</button>
     </div>
   </div>
-  <div class="inline-actions">
-    <button class="btn outline small" id="brand-template">Template Excel</button>
-    <form id="brand-upload-form" class="inline-form">
-      <input type="file" name="file" accept=".xlsx">
-      <button type="submit" class="btn secondary small">Importar</button>
-    </form>
+
+  <div class="catalog-toolbar">
+    <div class="catalog-toolbar-filters">
+      <input type="search" id="brands-search" class="table-search" placeholder="Buscar marca">
+      <select id="brand-filter-category">
+        <option value="">Todas las categorías</option>
+        <option value="Alta">Alta</option>
+        <option value="Media">Media</option>
+        <option value="Baja">Baja</option>
+        <option value="Normal">Normal</option>
+      </select>
+    </div>
+    <div class="catalog-toolbar-right">
+      <button class="btn outline small" id="brand-export">Exportar Excel</button>
+      <button class="btn outline small" id="brand-template">Template Excel</button>
+      <form id="brand-upload-form" class="inline-form">
+        <input type="file" name="file" accept=".xlsx">
+        <button type="submit" class="btn secondary small">Importar</button>
+      </form>
+    </div>
   </div>
-  <div class="table-wrapper compact">
-    <table id="brands-table">
-      <thead>
-        <tr>
-          <th class="catalog-select-col"><input type="checkbox" id="brand-select-all"></th>
-          <th>Marca</th>
-          <th>Categoria</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+  <div class="panel table-panel">
+    <div class="table-header">
+      <h3>Listado de marcas</h3>
+      <label class="table-select-all">
+        <input type="checkbox" id="brand-select-all"> Seleccionar todo
+      </label>
+    </div>
+    <div class="table-wrapper">
+      <table id="brands-table">
+        <thead>
+          <tr>
+            <th class="catalog-select-col"></th>
+            <th>Marca</th>
+            <th>Categoría</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="table-footer" data-table="brands-table"></div>
   </div>
-  <div class="table-footer" data-table="brands-table"></div>
 </section>

@@ -1,37 +1,58 @@
 <section class="panel module" id="module-products">
-  <div class="module-header">
-    <h3>Productos</h3>
-    <div class="header-actions catalog-header-actions">
-      <div class="catalog-search">
-        <input type="search" id="products-search" class="table-search" placeholder="Buscar producto">
-      </div>
-      <div class="catalog-buttons">
-        <button class="btn primary" id="product-open">Nuevo producto</button>
-        <button class="btn danger" id="product-bulk-delete" disabled>Eliminar seleccionados</button>
-      </div>
+  <div class="page-header">
+    <div>
+      <h2>Productos</h2>
+      <p>Gestiona productos, marcas y su categoría de prioridad.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn primary" id="product-open">Nuevo producto</button>
+      <button class="btn danger" id="product-bulk-delete" disabled>Eliminar seleccionados</button>
     </div>
   </div>
-  <div class="inline-actions">
-    <button class="btn outline small" id="product-template">Template Excel</button>
-    <form id="product-upload-form" class="inline-form">
-      <input type="file" name="file" accept=".xlsx">
-      <button type="submit" class="btn secondary small">Importar</button>
-    </form>
+
+  <div class="catalog-toolbar">
+    <div class="catalog-toolbar-filters">
+      <input type="search" id="products-search" class="table-search" placeholder="Buscar producto">
+      <select id="product-filter-category">
+        <option value="">Todas las categorías</option>
+        <option value="Alta">Alta</option>
+        <option value="Media">Media</option>
+        <option value="Baja">Baja</option>
+        <option value="Normal">Normal</option>
+      </select>
+    </div>
+    <div class="catalog-toolbar-right">
+      <button class="btn outline small" id="product-export">Exportar Excel</button>
+      <button class="btn outline small" id="product-template">Template Excel</button>
+      <form id="product-upload-form" class="inline-form">
+        <input type="file" name="file" accept=".xlsx">
+        <button type="submit" class="btn secondary small">Importar</button>
+      </form>
+    </div>
   </div>
-  <div class="table-wrapper compact">
-    <table id="products-table">
-      <thead>
-        <tr>
-          <th class="catalog-select-col"><input type="checkbox" id="product-select-all"></th>
-          <th>SKU</th>
-          <th>Descripcion</th>
-          <th>Marca</th>
-          <th>Categoria</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+  <div class="panel table-panel">
+    <div class="table-header">
+      <h3>Listado de productos</h3>
+      <label class="table-select-all">
+        <input type="checkbox" id="product-select-all"> Seleccionar todo
+      </label>
+    </div>
+    <div class="table-wrapper">
+      <table id="products-table">
+        <thead>
+          <tr>
+            <th class="catalog-select-col"></th>
+            <th>SKU</th>
+            <th>Descripción</th>
+            <th>Marca</th>
+            <th>Categoría</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="table-footer" data-table="products-table"></div>
   </div>
-  <div class="table-footer" data-table="products-table"></div>
 </section>

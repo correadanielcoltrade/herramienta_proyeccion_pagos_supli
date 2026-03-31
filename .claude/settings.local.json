@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST https://herramienta-proyeccion-pagos-supli.onrender.com/admin/db-migrate -H \"X-Migrate-Secret: pp-migrate-2026\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s -X POST https://herramienta-proyeccion-pagos-supli.onrender.com/register -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"correadaniel@coltrade.com.co\"\",\"\"password\"\":\"\"3232\"\",\"\"name\"\":\"\"Daniel 2.0\"\",\"\"role\"\":\"\"ADMIN\"\"}')"
+    ]
+  }
+}

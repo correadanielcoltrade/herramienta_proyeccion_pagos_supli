@@ -5,7 +5,7 @@ import json
 from datetime import datetime, date, timedelta
 from flask import Blueprint, request, jsonify, send_file
 from blueprint.security import auth_required
-from blueprint.storage import load_records, save_records, next_id, utc_now_iso
+from blueprint.storage import load_records, save_records, load_record, save_record, next_id, next_id_db, utc_now_iso
 from blueprint.cache import invalidate_cache
 from blueprint.excel import load_excel_records, build_excel_template, EXCEL_MIME
 
@@ -263,7 +263,6 @@ def list_payments():
 @auth_required(['ADMIN'])
 def create_payment():
     payload = request.get_json(silent=True) or {}
-    payments = load_records('pp_payments')
     providers = load_records('pp_providers')
 
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
@@ -273,14 +272,13 @@ def create_payment():
         return jsonify({'error': 'Proveedor y monto mayor a 0 son requeridos'}), 400
 
     new_payment = {
-        'id': next_id(payments),
+        'id': next_id_db('pp_payments'),
         'created_at': utc_now_iso(),
         'updated_at': utc_now_iso(),
         'data_json': data_json,
     }
-    payments.append(new_payment)
 
-    save_records('pp_payments', payments)
+    save_record('pp_payments', new_payment)
     save_records('pp_providers', providers)
     invalidate_cache('dashboard')
 
@@ -291,13 +289,12 @@ def create_payment():
 @auth_required(['ADMIN'])
 def update_payment(payment_id):
     payload = request.get_json(silent=True) or {}
-    payments = load_records('pp_payments')
-    providers = load_records('pp_providers')
 
-    payment = _find_by_id(payments, payment_id)
+    payment = load_record('pp_payments', payment_id)
     if not payment:
         return jsonify({'error': 'Pago no encontrado'}), 404
 
+    providers = load_records('pp_providers')
     provider_index = {p['data_json']['name'].lower(): p for p in providers}
 
     data_json = payment['data_json']
@@ -308,7 +305,7 @@ def update_payment(payment_id):
     payment['data_json'] = updated_data
     payment['updated_at'] = utc_now_iso()
 
-    save_records('pp_payments', payments)
+    save_record('pp_payments', payment)
     save_records('pp_providers', providers)
     invalidate_cache('dashboard')
 
@@ -320,10 +317,9 @@ def update_payment(payment_id):
 def update_payment_status(payment_id):
     payload = request.get_json(silent=True) or {}
     new_status = _normalize_status(payload.get('status'))
-    payments = load_records('pp_payments')
-    logs = load_records('pp_logs')
 
-    payment = _find_by_id(payments, payment_id)
+    # Load only the single payment — no full table scan
+    payment = load_record('pp_payments', payment_id)
     if not payment:
         return jsonify({'error': 'Pago no encontrado'}), 404
 
@@ -332,7 +328,7 @@ def update_payment_status(payment_id):
     payment['updated_at'] = utc_now_iso()
 
     log_record = {
-        'id': next_id(logs),
+        'id': next_id_db('pp_logs'),
         'created_at': utc_now_iso(),
         'updated_at': utc_now_iso(),
         'data_json': {
@@ -342,10 +338,10 @@ def update_payment_status(payment_id):
             'user_id': request.user.get('id'),
         }
     }
-    logs.append(log_record)
 
-    save_records('pp_payments', payments)
-    save_records('pp_logs', logs)
+    # Two targeted upserts — no DELETE/re-INSERT of entire tables
+    save_record('pp_payments', payment)
+    save_record('pp_logs', log_record)
     invalidate_cache('dashboard')
 
     return jsonify(payment), 200

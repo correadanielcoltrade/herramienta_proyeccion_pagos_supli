@@ -1,13 +1,17 @@
 import json
 import os
+import threading
+from contextlib import contextmanager
 from datetime import datetime
 from flask import current_app
 
 try:
     import psycopg2
+    from psycopg2 import pool as pg_pool
     from psycopg2.extras import RealDictCursor, execute_values, Json
 except Exception:
     psycopg2 = None
+    pg_pool = None
     RealDictCursor = None
     execute_values = None
     Json = None
@@ -31,6 +35,9 @@ DB_TABLES = {
 }
 
 _TABLE_RESOLUTION = {}
+_ensured_tables = set()   # tables whose DDL has already been confirmed this process
+_pool = None
+_pool_lock = threading.Lock()
 
 
 def _data_path(file_key):
@@ -74,13 +81,69 @@ def _db_enabled():
 def _db_table_prefix():
     prefix = os.getenv('DB_TABLE_PREFIX') or 'proyeccionpagossupli'
     prefix = prefix.strip()
-    # Sanitize to avoid invalid identifiers.
     prefix = ''.join(ch for ch in prefix if ch.isalnum() or ch == '_')
     if prefix and not prefix.endswith('_'):
         prefix = f"{prefix}_"
     return prefix
 
 
+# ---------------------------------------------------------------------------
+# Connection pool — created once per process, reused across all requests.
+# Eliminates the TCP+TLS handshake overhead that was occurring on every call.
+# ---------------------------------------------------------------------------
+
+def _get_pool():
+    global _pool
+    if _pool is not None:
+        return _pool
+    with _pool_lock:
+        if _pool is not None:
+            return _pool
+        if not _db_enabled() or pg_pool is None:
+            return None
+        config = _db_config()
+        min_conn, max_conn = 1, 10
+        if 'url' in config:
+            kwargs = {}
+            if config.get('sslmode'):
+                kwargs['sslmode'] = config['sslmode']
+            new_pool = pg_pool.ThreadedConnectionPool(min_conn, max_conn, config['url'], **kwargs)
+        else:
+            new_pool = pg_pool.ThreadedConnectionPool(
+                min_conn, max_conn,
+                dbname=config['name'],
+                user=config['user'],
+                password=config['password'],
+                host=config['host'],
+                port=config['port'],
+                sslmode=config['sslmode'],
+            )
+        _pool = new_pool
+        return _pool
+
+
+@contextmanager
+def _db_conn():
+    """Obtain a connection from the pool, commit on success, rollback on error."""
+    pool = _get_pool()
+    if pool is None:
+        raise RuntimeError('DB not configured or psycopg2 not installed.')
+    conn = pool.getconn()
+    conn.autocommit = False
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
+    finally:
+        pool.putconn(conn)
+
+
+# Legacy direct-connect — kept only for infrequent migration utilities.
 def _db_connect():
     if not _db_enabled():
         return None
@@ -89,10 +152,7 @@ def _db_connect():
     config = _db_config()
     if 'url' in config:
         sslmode = config.get('sslmode')
-        if sslmode:
-            conn = psycopg2.connect(config['url'], sslmode=sslmode)
-        else:
-            conn = psycopg2.connect(config['url'])
+        conn = psycopg2.connect(config['url'], sslmode=sslmode) if sslmode else psycopg2.connect(config['url'])
     else:
         conn = psycopg2.connect(
             dbname=config['name'],
@@ -163,6 +223,9 @@ def _resolve_table(file_key, conn):
 
 
 def _ensure_table(conn, table_name):
+    """Create table if needed. Result is cached per process — DDL runs at most once."""
+    if table_name in _ensured_tables:
+        return
     with conn.cursor() as cur:
         cur.execute(
             f"""
@@ -174,7 +237,7 @@ def _ensure_table(conn, table_name):
             )
             """
         )
-    conn.commit()
+    _ensured_tables.add(table_name)
 
 
 def _deserialize_json(value):
@@ -206,12 +269,25 @@ def _load_json_records(file_key, default_value=None):
         return json.load(f)
 
 
+def _row_to_record(row):
+    return {
+        'id': row['id'],
+        'created_at': row['created_at'],
+        'updated_at': row['updated_at'],
+        'data_json': _deserialize_json(row['data_json']),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
 def load_records(file_key, default_value=None):
+    """Load all records for a collection."""
     if default_value is None:
         default_value = []
     if _db_enabled():
-        conn = _db_connect()
-        try:
+        with _db_conn() as conn:
             table_name = _resolve_table(file_key, conn)
             _ensure_table(conn, table_name)
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -219,18 +295,7 @@ def load_records(file_key, default_value=None):
                     f"SELECT id, created_at, updated_at, data_json FROM {table_name} ORDER BY id"
                 )
                 rows = cur.fetchall() or []
-            conn.commit()
-        finally:
-            conn.close()
-
-        records = []
-        for row in rows:
-            records.append({
-                'id': row.get('id'),
-                'created_at': row.get('created_at'),
-                'updated_at': row.get('updated_at'),
-                'data_json': _deserialize_json(row.get('data_json')),
-            })
+        records = [_row_to_record(r) for r in rows]
         return records if records else default_value
 
     path = _data_path(file_key)
@@ -240,35 +305,107 @@ def load_records(file_key, default_value=None):
 
 
 def save_records(file_key, records):
+    """Replace an entire collection (full table rewrite)."""
     if _db_enabled():
-        conn = _db_connect()
-        try:
+        with _db_conn() as conn:
             table_name = _resolve_table(file_key, conn)
             _ensure_table(conn, table_name)
             with conn.cursor() as cur:
                 cur.execute(f"DELETE FROM {table_name}")
                 if records:
-                    rows = []
-                    for record in records:
-                        rows.append((
-                            record.get('id'),
-                            record.get('created_at'),
-                            record.get('updated_at'),
-                            Json(record.get('data_json') or {}),
-                        ))
+                    rows = [
+                        (
+                            r.get('id'),
+                            r.get('created_at'),
+                            r.get('updated_at'),
+                            Json(r.get('data_json') or {}),
+                        )
+                        for r in records
+                    ]
                     execute_values(
                         cur,
                         f"INSERT INTO {table_name} (id, created_at, updated_at, data_json) VALUES %s",
                         rows,
                     )
-            conn.commit()
-        finally:
-            conn.close()
         return
 
     path = _data_path(file_key)
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
+
+
+def load_record(file_key, record_id):
+    """Load a single record by ID — avoids a full table scan."""
+    if _db_enabled():
+        with _db_conn() as conn:
+            table_name = _resolve_table(file_key, conn)
+            _ensure_table(conn, table_name)
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    f"SELECT id, created_at, updated_at, data_json FROM {table_name} WHERE id = %s",
+                    (record_id,),
+                )
+                row = cur.fetchone()
+        return _row_to_record(row) if row else None
+
+    records = _load_json_records(file_key, default_value=[])
+    for r in records:
+        if str(r.get('id')) == str(record_id):
+            return r
+    return None
+
+
+def save_record(file_key, record):
+    """Upsert a single record — avoids rewriting the entire table."""
+    if _db_enabled():
+        with _db_conn() as conn:
+            table_name = _resolve_table(file_key, conn)
+            _ensure_table(conn, table_name)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {table_name} (id, created_at, updated_at, data_json)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE SET
+                        updated_at = EXCLUDED.updated_at,
+                        data_json  = EXCLUDED.data_json
+                    """,
+                    (
+                        record.get('id'),
+                        record.get('created_at'),
+                        record.get('updated_at'),
+                        Json(record.get('data_json') or {}),
+                    ),
+                )
+        return
+
+    # JSON file fallback: load all, upsert in-memory, write back
+    records = _load_json_records(file_key, default_value=[])
+    found = False
+    for i, r in enumerate(records):
+        if str(r.get('id')) == str(record.get('id')):
+            records[i] = record
+            found = True
+            break
+    if not found:
+        records.append(record)
+    path = _data_path(file_key)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+
+
+def next_id_db(file_key):
+    """Get the next available integer ID without loading all records."""
+    if _db_enabled():
+        with _db_conn() as conn:
+            table_name = _resolve_table(file_key, conn)
+            _ensure_table(conn, table_name)
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {table_name}")
+                return cur.fetchone()[0]
+
+    records = _load_json_records(file_key, default_value=[])
+    return next_id(records)
 
 
 def migrate_json_to_db():
@@ -292,7 +429,6 @@ def migrate_old_tables_to_new():
         raise RuntimeError('DB config missing.')
 
     prefix = _db_table_prefix()
-    # Nombres de tablas viejas (con el prefijo + pp_ duplicado)
     old_names = {
         'pp_users':     f'{prefix}pp_users',
         'pp_payments':  f'{prefix}pp_payments',
@@ -319,13 +455,23 @@ def migrate_old_tables_to_new():
                     cur.execute(f'SELECT COUNT(*) FROM {old_table}')
                     result['old_records'] = cur.fetchone()[0]
 
-            _ensure_table(conn, new_table)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {new_table} (
+                        id INTEGER PRIMARY KEY,
+                        created_at TEXT,
+                        updated_at TEXT,
+                        data_json JSONB
+                    )
+                    """
+                )
+            conn.commit()
 
             with conn.cursor() as cur:
                 cur.execute(f'SELECT COUNT(*) FROM {new_table}')
                 new_count = cur.fetchone()[0]
 
-            # Solo copia si la tabla vieja tiene datos y la nueva está vacía
             if old_exists and result['old_records'] > 0 and new_count == 0:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -335,14 +481,12 @@ def migrate_old_tables_to_new():
                     result['migrated'] = cur.rowcount
                 conn.commit()
 
-            # Elimina tabla vieja si existe
             if old_exists:
                 with conn.cursor() as cur:
                     cur.execute(f'DROP TABLE IF EXISTS {old_table}')
                 conn.commit()
                 result['dropped_old'] = True
 
-            # Limpia caché de resolución de tablas
             _TABLE_RESOLUTION.pop(file_key, None)
             summary[file_key] = result
     finally:

@@ -1,39 +1,94 @@
-.module-header {
+/* ── Page header (shared with payments module) ── */
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  margin: 0 0 4px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
-.catalog-header-actions {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto;
+/* ── Catalog toolbar (search + filter + actions) ── */
+.catalog-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.catalog-toolbar-filters {
+  display: flex;
+  gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
-.catalog-search {
-  min-width: 220px;
+.catalog-toolbar-filters .table-search {
+  min-width: 180px;
+  max-width: 260px;
+  flex: 1;
 }
 
-.catalog-buttons {
+.catalog-toolbar-filters select {
+  min-width: 160px;
+}
+
+.catalog-toolbar-right {
   display: flex;
   gap: 8px;
+  align-items: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-.table-wrapper.compact {
-  margin-top: 12px;
+/* ── Table panel ── */
+.table-panel {
+  padding: 16px;
 }
 
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.table-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Catalog tables ── */
 #brands-table,
 #vendors-table,
 #products-table,
@@ -50,34 +105,31 @@
 #products-table td,
 #users-table th,
 #users-table td {
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid #f0eee8;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .catalog-select-col {
   width: 36px;
 }
 
-.catalog-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
+/* ── Category badge ── */
+.cat-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.form.compact {
-  gap: 8px;
-}
+.cat-badge.alta  { background: rgba(178, 58, 72, 0.12); color: var(--danger); }
+.cat-badge.media { background: rgba(211, 140, 26, 0.12); color: var(--warning); }
+.cat-badge.baja  { background: rgba(47, 143, 91, 0.12); color: var(--success); }
+.cat-badge.normal{ background: #f0eee8; color: var(--muted); }
 
-.inline-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-}
-
+/* ── Legacy (inline import form) ── */
 .inline-form {
   display: flex;
   gap: 8px;
@@ -86,19 +138,41 @@
 
 .inline-form input[type="file"] {
   max-width: 180px;
+  font-size: 12px;
 }
 
+/* ── Misc ── */
+.form.compact {
+  gap: 8px;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+/* ── Responsive ── */
 @media (max-width: 720px) {
-  .module-header {
+  .catalog-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .catalog-header-actions {
-    grid-template-columns: 1fr;
+  .catalog-toolbar-filters,
+  .catalog-toolbar-right {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .catalog-buttons {
-    justify-content: flex-start;
+  .catalog-toolbar-filters .table-search,
+  .catalog-toolbar-filters select {
+    max-width: none;
+    width: 100%;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

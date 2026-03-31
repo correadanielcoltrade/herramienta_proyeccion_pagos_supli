@@ -2,6 +2,7 @@
 import io
 import csv
 import json
+import unicodedata
 from datetime import datetime, date, timedelta
 from flask import Blueprint, request, jsonify, send_file
 from blueprint.security import auth_required
@@ -17,6 +18,38 @@ CATEGORY_VALUES = {'ALTA': 'Alta', 'MEDIA': 'Media', 'BAJA': 'Baja'}
 PROVIDER_STATUS_VALUES = {'NACIONAL': 'Nacional', 'INTERNACIONAL': 'Internacional'}
 PROVIDER_TYPE_VALUES = {'COMERCIAL': 'Comercial', 'ADMINISTRATIVO': 'Administrativo'}
 PAYMENT_TYPE_VALUES = {'NACIONAL': 'Nacional', 'INTERNACIONAL': 'Internacional'}
+
+UPLOAD_KEY_ALIASES = {
+    'proveedor': 'provider_name',
+    'provider': 'provider_name',
+    'provider_name': 'provider_name',
+    'nombre_proveedor': 'provider_name',
+    'payment_id': 'payment_id',
+    'id_pago': 'payment_id',
+    'tipo_de_pago': 'tipo_pago',
+    'tipo_pago': 'tipo_pago',
+    'payment_type': 'payment_type',
+    'oc_embarques': 'order',
+    'oc_embarque': 'order',
+    'oc': 'order',
+    'embarque': 'order',
+    'orden': 'order',
+    'ordenes': 'orders',
+    'factura': 'order',
+    'facturas': 'orders',
+    'valor_pendiente': 'valor_pendiente',
+    'valor': 'valor',
+    'monto': 'monto',
+    'amount': 'amount',
+    'valor_a_pagar': 'valor_pendiente',
+    'valor_pagar': 'valor_pendiente',
+    'fecha': 'fecha',
+    'date': 'date',
+    'fecha_pago': 'fecha',
+    'estado': 'estado',
+    'status': 'status',
+    'estado_pago': 'estado',
+}
 
 
 def _normalize_status(value):
@@ -54,6 +87,34 @@ def _normalize_payment_type(value, fallback='Nacional'):
     return PAYMENT_TYPE_VALUES.get(key, fallback)
 
 
+def _normalize_upload_key(value):
+    if value is None:
+        return ''
+    text = unicodedata.normalize('NFKD', str(value))
+    text = text.encode('ascii', 'ignore').decode('ascii')
+    text = text.strip().lower()
+    text = text.replace(' ', '_').replace('/', '_').replace('-', '_')
+    while '__' in text:
+        text = text.replace('__', '_')
+    return text.strip('_')
+
+
+def _normalize_upload_record(record):
+    if not isinstance(record, dict):
+        return {}
+    normalized = {}
+    for key, value in record.items():
+        norm_key = _normalize_upload_key(key)
+        if not norm_key:
+            continue
+        norm_key = UPLOAD_KEY_ALIASES.get(norm_key, norm_key)
+        if norm_key in normalized and normalized[norm_key] not in (None, ''):
+            if value in (None, ''):
+                continue
+        normalized[norm_key] = value
+    return normalized
+
+
 def _parse_date(value):
     if not value:
         return None
@@ -61,6 +122,12 @@ def _parse_date(value):
         return value
     if isinstance(value, date):
         return datetime.combine(value, datetime.min.time())
+    if isinstance(value, (int, float)):
+        # Excel serial date (Windows default: 1899-12-30 base)
+        try:
+            return datetime(1899, 12, 30) + timedelta(days=float(value))
+        except Exception:
+            return None
     text = str(value).strip()
     for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%Y/%m/%d', '%d-%m-%Y', '%m-%d-%Y']:
         try:
@@ -153,10 +220,26 @@ def _normalize_payment_payload(payload, providers, provider_index):
         provider = _find_by_id(providers, provider_id)
     if not provider and provider_name:
         provider = provider_index.get(provider_name.lower())
+    if not provider and provider_name:
+        provider_status = _normalize_provider_status(payload.get('provider_status') or payload.get('estado_proveedor'))
+        provider_type = _normalize_provider_type(payload.get('provider_type') or payload.get('tipo_proveedor'))
+        provider_category_payload = _normalize_category(payload.get('provider_category') or payload.get('categoria'))
+        provider = _get_or_create_provider(
+            provider_name,
+            provider_category_payload,
+            providers,
+            provider_index,
+            status=provider_status,
+            provider_type=provider_type,
+        )
 
     provider_category = provider['data_json'].get('category') if provider else 'Normal'
-    provider_status = provider['data_json'].get('status', 'Nacional') if provider else 'Nacional'
-    provider_type = provider['data_json'].get('type', 'Comercial') if provider else 'Comercial'
+    provider_status = provider['data_json'].get('status', 'Nacional') if provider else _normalize_provider_status(
+        payload.get('provider_status') or payload.get('estado_proveedor')
+    )
+    provider_type = provider['data_json'].get('type', 'Comercial') if provider else _normalize_provider_type(
+        payload.get('provider_type') or payload.get('tipo_proveedor')
+    )
     payment_type_raw = payload.get('payment_type') or payload.get('tipo_pago')
     payment_type = _normalize_payment_type(payment_type_raw, provider_status)
 
@@ -183,7 +266,7 @@ def _normalize_payment_payload(payload, providers, provider_index):
                 orders.append({'order': label, 'amount': 0.0})
 
     # Si viene order/oc_embarque como campos simples (Excel import compat)
-    single_order = (payload.get('order') or payload.get('oc_embarque') or payload.get('oc') or '').strip()
+    single_order = str(payload.get('order') or payload.get('oc_embarque') or payload.get('oc') or '').strip()
     if single_order and not orders:
         single_amount = _amount(payload.get('valor_pendiente') or payload.get('amount') or payload.get('monto') or 0)
         orders.append({'order': single_order, 'amount': single_amount})
@@ -454,8 +537,12 @@ def upload_payments():
     groups = {}
     for record in records:
         try:
+            record = _normalize_upload_record(record)
             pid = str(record.get('payment_id', '') or '').strip()
-            key = pid if pid else f'_single_{id(record)}'
+            date_raw = record.get('fecha') or record.get('date')
+            parsed_date = _parse_date(date_raw)
+            date_key = parsed_date.date().isoformat() if parsed_date else ''
+            key = f'{pid}|{date_key}' if pid else f'_single_{id(record)}'
             if key not in groups:
                 groups[key] = {'base': dict(record), 'orders': [], 'amount': 0.0}
             else:
@@ -463,12 +550,22 @@ def upload_payments():
                 for field in ('tipo_pago', 'payment_type'):
                     if not groups[key]['base'].get(field) and record.get(field):
                         groups[key]['base'][field] = record.get(field)
-            order_val = str(
-                record.get('order', '')
-                or record.get('oc', '')
-                or record.get('oc_embarque', '')
-                or ''
-            ).strip()
+                if not groups[key]['base'].get('fecha') and record.get('fecha'):
+                    groups[key]['base']['fecha'] = record.get('fecha')
+                if not groups[key]['base'].get('date') and record.get('date'):
+                    groups[key]['base']['date'] = record.get('date')
+            raw_order = None
+            for _field in ('order', 'oc', 'oc_embarque'):
+                _v = record.get(_field)
+                if _v is not None and _v != '':
+                    raw_order = _v
+                    break
+            if raw_order is None:
+                raw_order = ''
+            if isinstance(raw_order, (int, float)) and not isinstance(raw_order, bool):
+                order_val = str(int(raw_order)) if float(raw_order).is_integer() else str(raw_order)
+            else:
+                order_val = str(raw_order).strip()
             row_amount = _amount(
                 record.get('valor_pendiente')
                 or record.get('amount')
@@ -481,6 +578,7 @@ def upload_payments():
             continue
 
     created = []
+    skipped = []
     for key, group in groups.items():
         try:
             base = group['base']
@@ -488,7 +586,11 @@ def upload_payments():
             if group['amount'] > 0:
                 base['amount'] = group['amount']
             data_json = _normalize_payment_payload(base, providers, provider_index)
-            if not data_json.get('provider_id') or data_json.get('amount', 0) <= 0:
+            if not data_json.get('provider_id'):
+                skipped.append({'key': key, 'reason': 'proveedor no encontrado', 'provider': base.get('provider_name')})
+                continue
+            if data_json.get('amount', 0) <= 0:
+                skipped.append({'key': key, 'reason': 'monto cero o negativo', 'provider': data_json.get('provider_name')})
                 continue
             new_payment = {
                 'id': next_id(payments),
@@ -498,14 +600,15 @@ def upload_payments():
             }
             payments.append(new_payment)
             created.append(new_payment)
-        except Exception:
+        except Exception as e:
+            skipped.append({'key': key, 'reason': str(e)})
             continue
 
     save_records('pp_payments', payments)
     save_records('pp_providers', providers)
     invalidate_cache('dashboard')
 
-    return jsonify({'created': len(created)}), 201
+    return jsonify({'created': len(created), 'skipped': len(skipped), 'skipped_detail': skipped}), 201
 
 
 @payments_bp.route('/exports/weeks', methods=['GET'])

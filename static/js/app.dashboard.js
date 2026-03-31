@@ -51,9 +51,10 @@ async function loadWeeks() {
     el.ganttExportWeek.innerHTML = '<option value="">Todas las semanas</option>';
   }
   weeks.forEach((w) => {
+    const label = w.week_year ? `Sem ${w.week} (${w.week_year})` : `Semana ${w.week}`;
     const option = document.createElement('option');
     option.value = w.week;
-    option.textContent = `Semana ${w.week}`;
+    option.textContent = label;
     el.filterWeek.appendChild(option);
     if (el.ganttExportWeek) {
       const ganttOption = option.cloneNode(true);
@@ -73,14 +74,26 @@ async function loadSummary() {
 async function loadGantt() {
   if (!el.ganttChart) return;
   const response = await apiFetch('/dashboard/gantt');
-  const gantt = await response.json();
-  renderGantt(gantt);
+  ganttData = await response.json();
+  _populateGanttYearFilter(ganttData);
+  if (!ganttYearFilterBound) {
+    const yearSel = document.getElementById('gantt-year-filter');
+    if (yearSel) {
+      yearSel.addEventListener('change', () => {
+        if (ganttData) renderGantt(ganttData, yearSel.value);
+        renderDashboardPivot(allPayments, yearSel.value);
+      });
+      ganttYearFilterBound = true;
+    }
+  }
+  const yearSel = document.getElementById('gantt-year-filter');
+  renderGantt(ganttData, yearSel ? yearSel.value : null);
 }
 
-async function updateGanttStatus({ providerId, week, status }) {
+async function updateGanttStatus({ providerId, week, weekYear, status }) {
   await apiFetch('/dashboard/gantt/status', {
     method: 'PATCH',
-    body: JSON.stringify({ provider_id: providerId, week, status }),
+    body: JSON.stringify({ provider_id: providerId, week, week_year: weekYear, status }),
   });
   await loadDashboard();
 }
@@ -108,6 +121,9 @@ async function loadDashboard() {
 }
 
 let ganttTooltipEl = null;
+let ganttData = null;
+let allPayments = [];
+let ganttYearFilterBound = false;
 
 function getGanttTooltip() {
   if (ganttTooltipEl && document.body.contains(ganttTooltipEl)) return ganttTooltipEl;
@@ -137,7 +153,7 @@ function setGanttTooltipContent(tooltip, data) {
 
   const meta = document.createElement('div');
   meta.className = 'gantt-tooltip-meta';
-  meta.textContent = `Semana ${data.week} | Total ${formatCurrency(data.total || 0)}`;
+  meta.textContent = `Semana ${data.week}${data.year ? ` (${data.year})` : ''} | Total ${formatCurrency(data.total || 0)}`;
   if (data.status) {
     meta.textContent += ` | Estado ${data.status}`;
   }
@@ -261,8 +277,9 @@ function renderWeeks(weeks) {
   if (!el.weeksList) return;
   el.weeksList.innerHTML = '';
   weeks.forEach((w) => {
+    const label = w.week_year ? `Sem ${w.week} (${w.week_year})` : `Semana ${w.week}`;
     const li = document.createElement('li');
-    li.innerHTML = `<span>Semana ${w.week}</span><span>${formatCurrency(w.total)}</span>`;
+    li.innerHTML = `<span>${label}</span><span>${formatCurrency(w.total)}</span>`;
     el.weeksList.appendChild(li);
   });
 }
@@ -280,13 +297,19 @@ function renderProviders(providers) {
 async function loadDashboardPivot() {
   if (!el.dashboardPivotBody) return;
   const response = await apiFetch('/payments');
-  const payments = await response.json();
-  renderDashboardPivot(payments || []);
+  allPayments = await response.json() || [];
+  const yearSel = document.getElementById('gantt-year-filter');
+  renderDashboardPivot(allPayments, yearSel ? yearSel.value : null);
 }
 
-function renderDashboardPivot(payments) {
+function renderDashboardPivot(payments, yearFilter) {
   if (!el.dashboardPivotBody) return;
   el.dashboardPivotBody.innerHTML = '';
+
+  if (yearFilter) {
+    const yearNum = Number(yearFilter);
+    payments = payments.filter((p) => Number((p.data_json || {}).week_year) === yearNum);
+  }
 
   if (!payments.length) {
     const row = document.createElement('tr');
@@ -583,10 +606,43 @@ function bindPivotToggles() {
   applyVisibility();
 }
 
-function renderGantt(gantt) {
+function _populateGanttYearFilter(gantt) {
+  const select = document.getElementById('gantt-year-filter');
+  if (!select) return;
+  const years = [...new Set((gantt.weeks || []).map((w) => w.year).filter(Boolean))].sort((a, b) => a - b);
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">Todos los años</option>';
+  years.forEach((y) => {
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = String(y);
+    select.appendChild(opt);
+  });
+  const currentYear = new Date().getFullYear();
+  if (years.includes(currentYear)) {
+    select.value = String(currentYear);
+  } else if (currentVal && years.includes(Number(currentVal))) {
+    select.value = currentVal;
+  } else if (years.length > 0) {
+    select.value = String(years[years.length - 1]);
+  }
+}
+
+function _formatGanttValue(amount) {
+  if (!amount || amount === 0) return '-';
+  return '$ ' + Math.round(amount).toLocaleString('es-CO');
+}
+
+function renderGantt(gantt, yearFilter) {
   if (!el.ganttChart) return;
-  const weeks = (gantt && gantt.weeks) || [];
+  let weeks = (gantt && gantt.weeks) || [];
   const vendors = (gantt && gantt.vendors) || [];
+
+  if (yearFilter) {
+    const yearNum = Number(yearFilter);
+    weeks = weeks.filter((w) => w.year === yearNum);
+  }
+
   const weeklyTotals = {};
 
   if (!weeks.length || !vendors.length) {
@@ -596,19 +652,28 @@ function renderGantt(gantt) {
 
   const grid = document.createElement('div');
   grid.className = 'gantt-grid';
-  grid.style.gridTemplateColumns = `220px repeat(${weeks.length}, minmax(90px, 1fr))`;
+  grid.style.gridTemplateColumns = `220px repeat(${weeks.length}, minmax(150px, 1fr))`;
 
   const headVendor = document.createElement('div');
   headVendor.className = 'gantt-head gantt-sticky';
   headVendor.textContent = 'Proveedor';
   grid.appendChild(headVendor);
 
-  weeks.forEach((week) => {
+  weeks.forEach((weekObj) => {
     const cell = document.createElement('div');
-    cell.className = 'gantt-head';
-    cell.textContent = `Sem ${week}`;
+    cell.className = 'gantt-head gantt-head-week';
+    const weekNum = document.createElement('span');
+    weekNum.className = 'gantt-head-weeknum';
+    weekNum.textContent = `Sem ${weekObj.week}`;
+    cell.appendChild(weekNum);
+    if (weekObj.year) {
+      const weekYear = document.createElement('span');
+      weekYear.className = 'gantt-head-weekyear';
+      weekYear.textContent = `(${weekObj.year})`;
+      cell.appendChild(weekYear);
+    }
     grid.appendChild(cell);
-    weeklyTotals[String(week)] = 0;
+    weeklyTotals[weekObj.key] = 0;
   });
 
   vendors.forEach((vendor) => {
@@ -619,8 +684,8 @@ function renderGantt(gantt) {
     nameCell.textContent = `${vendorName} (${vendorCategory})`;
     grid.appendChild(nameCell);
 
-    weeks.forEach((week) => {
-      const key = String(week);
+    weeks.forEach((weekObj) => {
+      const key = weekObj.key;
       const entry = (vendor.weeks && vendor.weeks[key]) || null;
       const cell = document.createElement('div');
       cell.className = 'gantt-cell';
@@ -630,10 +695,11 @@ function renderGantt(gantt) {
         if (priority === 'Alta') cell.classList.add('gantt-high');
         if (priority === 'Media') cell.classList.add('gantt-medium');
         if (priority === 'Baja') cell.classList.add('gantt-low');
-        cell.innerHTML = `<span class="gantt-value">${formatCurrency(entry.total)}</span>`;
+        cell.innerHTML = `<span class="gantt-value">${_formatGanttValue(entry.total)}</span>`;
         const status = entry.status || 'Pendiente';
         if (status === 'Pagado') cell.classList.add('gantt-paid');
-        cell.dataset.week = week;
+        cell.dataset.week = weekObj.week;
+        cell.dataset.weekYear = weekObj.year || '';
         if (vendor.vendor_id !== null && vendor.vendor_id !== undefined) {
           cell.dataset.providerId = vendor.vendor_id;
           cell.classList.add('gantt-has-toggle');
@@ -648,7 +714,12 @@ function renderGantt(gantt) {
             const nextStatus = status === 'Pagado' ? 'Pendiente' : 'Pagado';
             toggleBtn.disabled = true;
             try {
-              await updateGanttStatus({ providerId: vendor.vendor_id, week, status: nextStatus });
+              await updateGanttStatus({
+                providerId: vendor.vendor_id,
+                week: weekObj.week,
+                weekYear: weekObj.year,
+                status: nextStatus,
+              });
             } catch (error) {
               alert(error.message);
             } finally {
@@ -663,7 +734,8 @@ function renderGantt(gantt) {
           cell.dataset.tooltip = JSON.stringify({
             vendorName,
             vendorCategory,
-            week,
+            week: weekObj.week,
+            year: weekObj.year,
             total: entry.total || 0,
             status: entry.status || 'Pendiente',
             details: entry.details,
@@ -681,11 +753,11 @@ function renderGantt(gantt) {
   totalLabel.textContent = 'Total semana';
   grid.appendChild(totalLabel);
 
-  weeks.forEach((week) => {
-    const key = String(week);
+  weeks.forEach((weekObj) => {
+    const key = weekObj.key;
     const cell = document.createElement('div');
     cell.className = 'gantt-cell gantt-total-cell';
-    cell.innerHTML = `<span class="gantt-value">${formatCurrency(weeklyTotals[key] || 0)}</span>`;
+    cell.innerHTML = `<span class="gantt-value">${_formatGanttValue(weeklyTotals[key] || 0)}</span>`;
     grid.appendChild(cell);
   });
 

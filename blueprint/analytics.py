@@ -24,23 +24,31 @@ def _week_from_date(value):
 
 
 def build_week_summary(payments):
-    week_map = defaultdict(lambda: {
-        'week': None,
-        'total': 0.0,
-        'paid_total': 0.0,
-        'pending_total': 0.0,
-        'status': 'Pendiente',
-    })
+    week_map = {}
 
     for p in payments:
         data = p.get('data_json', {})
         week = data.get('week') or _week_from_date(data.get('date'))
         if week is None:
             continue
+        week_year = data.get('week_year')
+        if week_year is None:
+            parsed = _parse_date(data.get('date'))
+            if parsed:
+                week_year = parsed.isocalendar()[0]
         amount = float(data.get('amount', 0) or 0)
         status = data.get('status', 'Pendiente')
-        entry = week_map[week]
-        entry['week'] = week
+        sort_key = (int(week_year) if week_year else 0, int(week))
+        if sort_key not in week_map:
+            week_map[sort_key] = {
+                'week': int(week),
+                'week_year': int(week_year) if week_year else None,
+                'total': 0.0,
+                'paid_total': 0.0,
+                'pending_total': 0.0,
+                'status': 'Pendiente',
+            }
+        entry = week_map[sort_key]
         entry['total'] += amount
         if status == 'Pagado':
             entry['paid_total'] += amount
@@ -122,7 +130,16 @@ def build_gantt_data_with_refs(payments, providers=None):
         week = data.get('week') or _week_from_date(data.get('date'))
         if week is None:
             continue
-        week_set.add(week)
+        week_year = data.get('week_year')
+        if week_year is None:
+            parsed = _parse_date(data.get('date'))
+            if parsed:
+                week_year = parsed.isocalendar()[0]
+
+        year_int = int(week_year) if week_year else 0
+        week_int = int(week)
+        week_set.add((year_int, week_int))
+        week_key = f"{year_int}-{week_int}" if year_int else str(week_int)
 
         vendor_id = data.get('provider_id')
         provider = provider_index.get(str(vendor_id)) if vendor_id is not None else None
@@ -145,7 +162,6 @@ def build_gantt_data_with_refs(payments, providers=None):
         if not vendor_entry.get('vendor_category'):
             vendor_entry['vendor_category'] = vendor_category
 
-        week_key = str(week)
         cell = vendor_entry['weeks'].setdefault(week_key, {
             'total': 0.0,
             'priority': 'Baja',
@@ -194,11 +210,20 @@ def build_gantt_data_with_refs(payments, providers=None):
         if priority_rank.get(priority, 0) > priority_rank.get(cell['priority'], 0):
             cell['priority'] = priority
 
-    weeks = sorted(week_set)
+    weeks_sorted = sorted(week_set)
+    weeks_out = [
+        {
+            'year': y if y else None,
+            'week': w,
+            'key': f"{y}-{w}" if y else str(w),
+            'label': f"Sem {w} ({y})" if y else f"Sem {w}",
+        }
+        for y, w in weeks_sorted
+    ]
     vendors = list(vendor_map.values())
     vendors.sort(key=lambda v: (v.get('vendor_name') or '').lower())
     return {
-        'weeks': weeks,
+        'weeks': weeks_out,
         'vendors': vendors,
     }
 

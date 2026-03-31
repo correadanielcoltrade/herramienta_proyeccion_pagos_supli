@@ -203,6 +203,10 @@
 
 .gantt-value {
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gantt-low {
@@ -476,6 +480,28 @@
 .gantt-tooltip-type {
   color: #6b5e4c;
   font-weight: 600;
+}
+
+.gantt-head-week {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+  padding: 6px 4px;
+  line-height: 1.2;
+}
+
+.gantt-head-weeknum {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.gantt-head-weekyear {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 @media (max-width: 720px) {

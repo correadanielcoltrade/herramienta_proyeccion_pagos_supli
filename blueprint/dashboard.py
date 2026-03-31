@@ -123,6 +123,7 @@ def dashboard_gantt_status():
     payload = request.get_json(silent=True) or {}
     provider_id = payload.get('provider_id')
     week = payload.get('week')
+    week_year = payload.get('week_year')
     status = _normalize_status(payload.get('status'))
 
     if provider_id is None or week is None:
@@ -134,14 +135,18 @@ def dashboard_gantt_status():
     for payment in payments:
         data = payment.get('data_json', {})
         payment_week = data.get('week')
+        payment_week_year = data.get('week_year')
         if payment_week is None:
             parsed = _parse_date(data.get('date'))
             if parsed:
-                _, payment_week, _ = parsed.isocalendar()
+                payment_week_year, payment_week, _ = parsed.isocalendar()
         if str(data.get('provider_id')) != str(provider_id):
             continue
         if str(payment_week) != str(week):
             continue
+        if week_year is not None and payment_week_year is not None:
+            if str(payment_week_year) != str(week_year):
+                continue
         if data.get('status') == status:
             continue
         data['status'] = status

@@ -1,0 +1,199 @@
+<section class="panel module" id="module-analysis">
+  <div class="page-header">
+    <div>
+      <h2>Analisis de Compras</h2>
+      <p>Inteligencia de compras por proveedor, marca y producto con analisis por categoria de prioridad.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn outline" id="analysis-refresh-btn">Actualizar analisis</button>
+    </div>
+  </div>
+
+  <div id="analysis-loading" class="an-loading" style="display:none">Calculando analisis...</div>
+
+  <!-- KPIs -->
+  <div class="psum-kpis" id="an-kpis"></div>
+
+  <!-- Filtros -->
+  <div class="an-filter-bar">
+    <!-- Accesos rapidos de fecha -->
+    <div class="an-date-shortcuts">
+      <span class="an-filter-label">Periodo:</span>
+      <button class="an-shortcut-btn" data-shortcut="month">Este mes</button>
+      <button class="an-shortcut-btn" data-shortcut="quarter">Ultimos 3 meses</button>
+      <button class="an-shortcut-btn" data-shortcut="year">Este año</button>
+      <button class="an-shortcut-btn" data-shortcut="prev_year">Año anterior</button>
+      <button class="an-shortcut-btn" data-shortcut="all">Todo</button>
+    </div>
+
+    <div class="an-filter-row">
+      <span class="an-filter-label">Desde:</span>
+      <input type="date" id="an-filter-date-from" class="an-date-input">
+      <span class="an-filter-label">Hasta:</span>
+      <input type="date" id="an-filter-date-to" class="an-date-input">
+
+      <span class="an-filter-sep"></span>
+
+      <span class="an-filter-label">Proveedor:</span>
+      <select id="an-filter-provider" class="select an-filter-select">
+        <option value="">Todos</option>
+      </select>
+      <span class="an-filter-label">Marca:</span>
+      <select id="an-filter-brand" class="select an-filter-select">
+        <option value="">Todas</option>
+      </select>
+      <span class="an-filter-label">Categoria:</span>
+      <select id="an-filter-category" class="select an-filter-select">
+        <option value="">Todas</option>
+        <option value="Alta">Alta</option>
+        <option value="Media">Media</option>
+        <option value="Baja">Baja</option>
+        <option value="Normal">Normal</option>
+      </select>
+      <button class="btn ghost small" id="an-filter-reset">Limpiar</button>
+    </div>
+
+    <div id="an-active-range" class="an-active-range" style="display:none">
+      <span id="an-active-range-label"></span>
+    </div>
+  </div>
+
+  <!-- Tendencia mensual -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Tendencia Mensual de Compras</h3>
+      <p class="helper-text">Total invertido por mes ordenado cronologicamente.</p>
+    </div>
+    <div id="an-trend-chart" class="psum-bar-chart"></div>
+  </div>
+
+  <!-- Top 3 rankings -->
+  <div class="psum-tops-grid">
+    <div class="panel soft psum-top-card">
+      <h4>Top Proveedores</h4>
+      <p class="helper-text">Por monto total comprado.</p>
+      <div id="an-top-providers" class="psum-rank-list"></div>
+    </div>
+    <div class="panel soft psum-top-card">
+      <h4>Top Marcas</h4>
+      <p class="helper-text">Por monto total comprado.</p>
+      <div id="an-top-brands" class="psum-rank-list"></div>
+    </div>
+    <div class="panel soft psum-top-card">
+      <h4>Top Productos</h4>
+      <p class="helper-text">Por monto total comprado.</p>
+      <div id="an-top-products" class="psum-rank-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== ANALISIS POR CATEGORIA ========== -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Analisis por Categoria de Proveedor</h3>
+      <p class="helper-text">
+        Distribucion del gasto segun la categoria de prioridad de cada proveedor
+        (Alta / Media / Baja / Normal).
+      </p>
+    </div>
+    <div id="an-by-prov-cat" class="an-cat-grid"></div>
+  </div>
+
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Analisis por Categoria de Marca</h3>
+      <p class="helper-text">
+        Distribucion del gasto segun la categoria de prioridad de cada marca.
+      </p>
+    </div>
+    <div id="an-by-brand-cat" class="an-cat-grid"></div>
+  </div>
+
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Analisis por Categoria de Producto</h3>
+      <p class="helper-text">
+        Distribucion del gasto segun la categoria de prioridad de cada producto.
+      </p>
+    </div>
+    <div id="an-by-prod-cat" class="an-cat-grid"></div>
+  </div>
+
+  <!-- Matriz Proveedor-Cat x Marca-Cat -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Matriz de Categorias: Proveedor &times; Marca</h3>
+      <p class="helper-text">
+        Cruce de la categoria del proveedor con la categoria de la marca comprada.
+        Identifica que combinaciones de prioridad concentran mas gasto.
+      </p>
+    </div>
+    <div id="an-cat-matrix" class="an-matrix-wrap"></div>
+  </div>
+
+  <!-- Combinaciones top -->
+  <div class="psum-combos-grid">
+    <div class="panel soft psum-combo-card">
+      <h4>Proveedor &times; Marca</h4>
+      <p class="helper-text">Top combinaciones por monto.</p>
+      <div class="table-wrapper psum-combo-wrapper">
+        <table class="psum-combo-table" id="an-prov-brand-table">
+          <thead><tr><th>#</th><th>Proveedor</th><th>Marca</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel soft psum-combo-card">
+      <h4>Proveedor &times; Producto</h4>
+      <p class="helper-text">Top combinaciones por monto.</p>
+      <div class="table-wrapper psum-combo-wrapper">
+        <table class="psum-combo-table" id="an-prov-product-table">
+          <thead><tr><th>#</th><th>Proveedor</th><th>Producto</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel soft psum-combo-card">
+      <h4>Marca &times; Producto</h4>
+      <p class="helper-text">Top combinaciones por monto.</p>
+      <div class="table-wrapper psum-combo-wrapper">
+        <table class="psum-combo-table" id="an-brand-product-table">
+          <thead><tr><th>#</th><th>Marca</th><th>Producto</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle relacional por proveedor -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Detalle Relacional por Proveedor</h3>
+      <p class="helper-text">
+        Expandir cada proveedor para ver su categoria, marcas y productos asociados.
+      </p>
+    </div>
+    <div id="an-provider-detail" class="psum-provider-list"></div>
+  </div>
+
+  <!-- Detalle relacional por marca -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Detalle Relacional por Marca</h3>
+      <p class="helper-text">
+        Expandir cada marca para ver su categoria, proveedores que la suministran y productos.
+      </p>
+    </div>
+    <div id="an-brand-detail" class="psum-provider-list"></div>
+  </div>
+
+  <!-- Detalle relacional por producto -->
+  <div class="panel soft psum-section">
+    <div class="psum-section-header">
+      <h3>Detalle Relacional por Producto</h3>
+      <p class="helper-text">
+        Expandir cada producto para ver su categoria, marcas y proveedores asociados.
+      </p>
+    </div>
+    <div id="an-product-detail" class="psum-provider-list"></div>
+  </div>
+</section>

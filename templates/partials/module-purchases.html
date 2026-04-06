@@ -1,0 +1,68 @@
+<section class="panel module" id="module-purchases">
+  <div class="page-header">
+    <div>
+      <h2>Registro de compras</h2>
+      <p>Registra compras por proveedor con detalle de productos por orden.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn primary" id="purchase-open" data-admin-only="true">Nueva compra</button>
+      <button class="btn outline" id="purchases-export">Exportar compras</button>
+    </div>
+  </div>
+
+  <div class="payments-toolbar">
+    <div class="inline-group">
+      <span class="inline-label">Buscar</span>
+      <div class="inline-controls">
+        <input type="search" id="purchases-search" class="table-search" placeholder="Buscar compra">
+      </div>
+    </div>
+
+    <div class="inline-group" data-admin-only="true">
+      <span class="inline-label">Importacion masiva</span>
+      <div class="inline-controls">
+        <button type="button" class="btn outline small" id="purchase-template" data-admin-only="true">Template Excel</button>
+        <form id="purchase-upload-form" class="inline-form">
+          <input type="file" name="file" accept=".xlsx">
+          <button type="submit" class="btn secondary small">Importar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel table-panel">
+    <div class="table-header">
+      <div>
+        <h3>Listado de compras</h3>
+        <p class="helper-text">Selecciona compras para eliminar en bloque.</p>
+      </div>
+      <div class="table-actions">
+        <label class="table-select-all">
+          <input type="checkbox" id="purchases-select-all">
+          Seleccionar todo
+        </label>
+        <button class="btn ghost" id="purchases-refresh">Actualizar</button>
+        <button class="btn danger" id="purchases-bulk-delete" data-admin-only="true" disabled>Eliminar seleccionados</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="purchases-table">
+        <thead>
+          <tr>
+            <th class="catalog-select-col"></th>
+            <th>ID</th>
+            <th>Proveedor</th>
+            <th>Orden de Compra</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Observaciones</th>
+            <th>Productos</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="table-footer" data-table="purchases-table"></div>
+  </div>
+</section>

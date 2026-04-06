@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="/static/css/styles.css">
   <link rel="stylesheet" href="/static/css/modules/dashboard.css">
   <link rel="stylesheet" href="/static/css/modules/payments.css">
+  <link rel="stylesheet" href="/static/css/modules/purchases.css">
+  <link rel="stylesheet" href="/static/css/modules/analysis.css">
   <link rel="stylesheet" href="/static/css/modules/catalogs.css">
   <link rel="stylesheet" href="/static/css/modules/modals.css">
 </head>
@@ -25,6 +27,8 @@
   <nav class="module-nav">
     <button class="nav-btn active" data-module="dashboard" id="nav-dashboard">Dashboard</button>
     <button class="nav-btn" data-module="payments" id="nav-payments">Pagos</button>
+    <button class="nav-btn" data-module="purchases" id="nav-purchases">Compras</button>
+    <button class="nav-btn" data-module="analysis" id="nav-analysis">Analisis de Compras</button>
     <button class="nav-btn" data-module="brands" id="nav-brands">Marcas</button>
     <button class="nav-btn" data-module="vendors" id="nav-vendors">Proveedores</button>
     <button class="nav-btn" data-module="products" id="nav-products">Productos</button>
@@ -48,6 +52,8 @@
     <section id="modules-panel">
       {% include 'partials/module-dashboard.html' %}
       {% include 'partials/module-payments.html' %}
+      {% include 'partials/module-purchases.html' %}
+      {% include 'partials/module-analysis.html' %}
       {% include 'partials/module-brands.html' %}
       {% include 'partials/module-vendors.html' %}
       {% include 'partials/module-products.html' %}
@@ -62,6 +68,8 @@
   <script src="/static/js/app.catalogs.js"></script>
   <script src="/static/js/app.dashboard.js"></script>
   <script src="/static/js/app.payments.js"></script>
+  <script src="/static/js/app.purchases.js"></script>
+  <script src="/static/js/app.analysis.js"></script>
   <script src="/static/js/app.auth.js"></script>
   <script src="/static/js/app.users.js"></script>
   <script src="/static/js/app.init.js"></script>

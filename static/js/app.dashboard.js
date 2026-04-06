@@ -4,6 +4,7 @@ async function loadAll() {
     loadProviders(),
     loadProducts(),
     loadDashboard(),
+    loadPurchases(),
   ];
   if (state.role === 'ADMIN') {
     tasks.push(loadUsers());
@@ -16,6 +17,9 @@ async function loadBrands() {
   const brands = await response.json();
   state.brands = brands;
   populateBrandSelect();
+  if (typeof refreshPurchaseBrandSelects === 'function') {
+    refreshPurchaseBrandSelects();
+  }
   renderBrands(brands);
 }
 
@@ -25,6 +29,9 @@ async function loadProviders() {
   state.providers = providers;
   populateProviderSelect(el.filterProvider);
   populateProviderSelect(el.providerSelect);
+  if (el.purchaseProviderSelect) {
+    populateProviderSelect(el.purchaseProviderSelect);
+  }
   renderProvidersCatalog(providers);
 }
 
@@ -34,6 +41,10 @@ async function loadProducts() {
   state.products = products;
   if (el.itemsContainer) {
     const selects = el.itemsContainer.querySelectorAll('select[name="product_id"]');
+    selects.forEach((selectEl) => populateProductSelect(selectEl));
+  }
+  if (el.purchaseItemsContainer) {
+    const selects = el.purchaseItemsContainer.querySelectorAll('select[name="product_id"]');
     selects.forEach((selectEl) => populateProductSelect(selectEl));
   }
   if (el.paymentPivotHeader) {
@@ -136,6 +147,8 @@ let ganttData = null;
 let allPayments = [];
 let ganttYearFilterBound = false;
 let ganttPaymentFilterBound = false;
+let providerSummaryFiltersBound = false;
+let providerSummarySnapshot = { rows: [], totals: { total: 0, paid_total: 0, pending_total: 0 } };
 
 function getGanttTooltip() {
   if (ganttTooltipEl && document.body.contains(ganttTooltipEl)) return ganttTooltipEl;
@@ -314,6 +327,9 @@ async function loadDashboardPivot() {
   const yearSel = document.getElementById('gantt-year-filter');
   const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
   renderDashboardPivot(allPayments, yearSel ? yearSel.value : null, pt);
+  _populateProviderSummaryYearFilter(allPayments);
+  bindProviderSummaryFilters();
+  renderProviderSummary(allPayments);
 }
 
 function renderDashboardPivot(payments, yearFilter, paymentTypeFilter) {
@@ -628,6 +644,206 @@ function bindPivotToggles() {
   applyVisibility();
 }
 
+function bindProviderSummaryFilters() {
+  if (providerSummaryFiltersBound) return;
+  if (el.providerSummarySearch) {
+    el.providerSummarySearch.addEventListener('input', () => renderProviderSummary(allPayments));
+  }
+  if (el.providerSummaryYear) {
+    el.providerSummaryYear.addEventListener('change', () => renderProviderSummary(allPayments));
+  }
+  if (el.providerSummaryStatus) {
+    el.providerSummaryStatus.addEventListener('change', () => renderProviderSummary(allPayments));
+  }
+  if (el.providerSummaryExport) {
+    el.providerSummaryExport.addEventListener('click', () => exportProviderSummary(allPayments));
+  }
+  providerSummaryFiltersBound = true;
+}
+
+function _getPaymentYear(data) {
+  const weekYear = Number(data.week_year);
+  if (Number.isFinite(weekYear) && weekYear > 0) return weekYear;
+  if (data.date) {
+    const parsed = new Date(data.date);
+    if (!Number.isNaN(parsed.getTime())) return parsed.getFullYear();
+  }
+  return null;
+}
+
+function _getPaymentDueInfo(data) {
+  if (data.date) {
+    const parsed = new Date(data.date);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { label: data.date, sortKey: parsed.getTime() };
+    }
+  }
+  if (data.week) {
+    const weekNum = Number(data.week);
+    const yearNum = Number(data.week_year || 0);
+    const label = data.week_year ? `Semana ${data.week} (${data.week_year})` : `Semana ${data.week}`;
+    const sortKey = Number.isFinite(weekNum) ? (yearNum * 100 + weekNum) : Number.MAX_SAFE_INTEGER;
+    return { label, sortKey };
+  }
+  return { label: '-', sortKey: Number.MAX_SAFE_INTEGER };
+}
+
+function _populateProviderSummaryYearFilter(payments) {
+  if (!el.providerSummaryYear) return;
+  const years = [
+    ...new Set(
+      payments
+        .map((p) => _getPaymentYear(p.data_json || {}))
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a - b);
+  const currentVal = el.providerSummaryYear.value;
+  el.providerSummaryYear.innerHTML = '<option value="">Todos los anos</option>';
+  years.forEach((year) => {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    el.providerSummaryYear.appendChild(option);
+  });
+  if (currentVal && years.includes(Number(currentVal))) {
+    el.providerSummaryYear.value = currentVal;
+  }
+}
+
+function _buildProviderSummaryRows(payments) {
+  const term = (el.providerSummarySearch && el.providerSummarySearch.value || '').trim().toLowerCase();
+  const yearFilter = el.providerSummaryYear ? el.providerSummaryYear.value : '';
+  const statusFilter = el.providerSummaryStatus ? el.providerSummaryStatus.value : '';
+
+  const providers = new Map();
+
+  payments.forEach((payment) => {
+    const data = payment.data_json || {};
+    const year = _getPaymentYear(data);
+    if (yearFilter && String(year) !== String(yearFilter)) return;
+    const status = data.status || 'Pendiente';
+    if (statusFilter && status !== statusFilter) return;
+
+    const providerName = (data.provider_name || 'Sin proveedor').trim() || 'Sin proveedor';
+    const providerKey = data.provider_id ? `id:${data.provider_id}` : `name:${providerName}`;
+    if (!providers.has(providerKey)) {
+      providers.set(providerKey, {
+        provider_name: providerName,
+        provider_id: data.provider_id || null,
+        total: 0,
+        paid_total: 0,
+        pending_total: 0,
+        paid_count: 0,
+        pending_count: 0,
+        next_due_label: '-',
+        next_due_sort: Number.MAX_SAFE_INTEGER,
+      });
+    }
+    const entry = providers.get(providerKey);
+    const amount = Number(data.amount || 0);
+    entry.total += amount;
+    if (status === 'Pagado') {
+      entry.paid_total += amount;
+      entry.paid_count += 1;
+    } else {
+      entry.pending_total += amount;
+      entry.pending_count += 1;
+      const dueInfo = _getPaymentDueInfo(data);
+      if (dueInfo.sortKey < entry.next_due_sort) {
+        entry.next_due_sort = dueInfo.sortKey;
+        entry.next_due_label = dueInfo.label;
+      }
+    }
+  });
+
+  let rows = [...providers.values()];
+  if (term) {
+    rows = rows.filter((row) => row.provider_name.toLowerCase().includes(term));
+  }
+  rows.sort((a, b) => {
+    if (b.pending_total !== a.pending_total) return b.pending_total - a.pending_total;
+    if (b.total !== a.total) return b.total - a.total;
+    return a.provider_name.localeCompare(b.provider_name, 'es');
+  });
+
+  const totals = { total: 0, paid_total: 0, pending_total: 0 };
+  rows.forEach((row) => {
+    totals.total += row.total;
+    totals.paid_total += row.paid_total;
+    totals.pending_total += row.pending_total;
+  });
+
+  return { rows, totals };
+}
+
+function renderProviderSummary(payments) {
+  if (!el.providerSummaryBody) return;
+  const result = _buildProviderSummaryRows(payments);
+  providerSummarySnapshot = result;
+
+  el.providerSummaryBody.innerHTML = '';
+  if (!result.rows.length) {
+    const empty = document.createElement('tr');
+    empty.innerHTML = '<td colspan="6" class="provider-summary-empty">Sin datos para el resumen.</td>';
+    el.providerSummaryBody.appendChild(empty);
+    return;
+  }
+
+  result.rows.forEach((row) => {
+    const statusLabel = row.pending_total > 0 ? 'Pendiente' : 'Pagado';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.provider_name}</td>
+      <td>${row.next_due_label || '-'}</td>
+      <td class="provider-summary-amount is-pending">${formatCurrency(row.pending_total)}</td>
+      <td class="provider-summary-amount is-paid">${formatCurrency(row.paid_total)}</td>
+      <td class="provider-summary-amount">${formatCurrency(row.total)}</td>
+      <td class="provider-summary-status">${statusLabel}</td>
+    `;
+    el.providerSummaryBody.appendChild(tr);
+  });
+
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'provider-summary-total';
+  totalRow.innerHTML = `
+    <td colspan="2">Total general</td>
+    <td class="provider-summary-amount is-pending">${formatCurrency(result.totals.pending_total)}</td>
+    <td class="provider-summary-amount is-paid">${formatCurrency(result.totals.paid_total)}</td>
+    <td class="provider-summary-amount">${formatCurrency(result.totals.total)}</td>
+    <td class="provider-summary-status">-</td>
+  `;
+  el.providerSummaryBody.appendChild(totalRow);
+}
+
+function exportProviderSummary(payments) {
+  const { rows, totals } = _buildProviderSummaryRows(payments);
+  const headers = ['Proveedor', 'Proximo pago', 'Pendiente', 'Pagado', 'Total', 'Estado'];
+  const dataRows = rows.map((row) => [
+    row.provider_name,
+    row.next_due_label || '-',
+    row.pending_total,
+    row.paid_total,
+    row.total,
+    row.pending_total > 0 ? 'Pendiente' : 'Pagado',
+  ]);
+  dataRows.push([
+    'Total general',
+    '-',
+    totals.pending_total,
+    totals.paid_total,
+    totals.total,
+    '-',
+  ]);
+  const yearFilter = el.providerSummaryYear ? el.providerSummaryYear.value : '';
+  const statusFilter = el.providerSummaryStatus ? el.providerSummaryStatus.value : '';
+  const suffixParts = [];
+  if (yearFilter) suffixParts.push(yearFilter);
+  if (statusFilter) suffixParts.push(statusFilter.toLowerCase());
+  const suffix = suffixParts.length ? `_${suffixParts.join('_')}` : '';
+  const filename = `resumen_proveedores${suffix}.xlsx`;
+  exportCatalogXLSX(headers, dataRows, filename);
+}
+
 function _populateGanttYearFilter(gantt) {
   const select = document.getElementById('gantt-year-filter');
   if (!select) return;
@@ -723,14 +939,11 @@ function renderGantt(gantt, yearFilter, paymentTypeFilter) {
   });
 
   vendors.forEach((vendor) => {
-    const nameCell = document.createElement('div');
-    nameCell.className = 'gantt-vendor gantt-sticky';
     const vendorName = vendor.vendor_name || 'Sin proveedor';
     const vendorCategory = vendor.vendor_category || 'Normal';
-    nameCell.textContent = `${vendorName} (${vendorCategory})`;
-    grid.appendChild(nameCell);
 
-    weeks.forEach((weekObj) => {
+    // Pre-compute entries per week so we can skip vendors with no matching data
+    const computedEntries = weeks.map((weekObj) => {
       const key = weekObj.key;
       let entry = (vendor.weeks && vendor.weeks[key]) || null;
       if (entry && paymentTypeFilter) {
@@ -744,10 +957,24 @@ function renderGantt(gantt, yearFilter, paymentTypeFilter) {
           entry = { ...entry, total: filteredTotal, details: filteredDetails };
         }
       }
+      return { weekObj, entry };
+    });
+
+    // When a filter is active, hide vendors that have no matching entries in any week
+    if (paymentTypeFilter && !computedEntries.some(({ entry }) => entry !== null)) {
+      return;
+    }
+
+    const nameCell = document.createElement('div');
+    nameCell.className = 'gantt-vendor gantt-sticky';
+    nameCell.textContent = `${vendorName} (${vendorCategory})`;
+    grid.appendChild(nameCell);
+
+    computedEntries.forEach(({ weekObj, entry }) => {
       const cell = document.createElement('div');
       cell.className = 'gantt-cell';
       if (entry) {
-        weeklyTotals[key] += entry.total || 0;
+        weeklyTotals[weekObj.key] += entry.total || 0;
         const priority = entry.priority || 'Baja';
         if (priority === 'Alta') cell.classList.add('gantt-high');
         if (priority === 'Media') cell.classList.add('gantt-medium');

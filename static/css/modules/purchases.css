@@ -1,0 +1,475 @@
+#purchases-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#purchases-table th,
+#purchases-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0eee8;
+  text-align: left;
+  font-size: 13px;
+}
+
+.purchase-observations {
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 240px;
+}
+
+/* ===================== PURCHASES VIEW TABS ===================== */
+.purchases-view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.purchases-tab-btn {
+  border: 1px solid #d8d4cc;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 18px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  color: var(--ink);
+}
+
+.purchases-tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ===================== PURCHASES SUMMARY ===================== */
+.psum-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.psum-loading-msg {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* KPI Cards */
+.psum-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.psum-kpi-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(31,31,31,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.psum-kpi-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.psum-kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1.1;
+}
+
+.psum-kpi-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Sections */
+.psum-section {
+  margin-bottom: 18px;
+}
+
+.psum-section-header {
+  margin-bottom: 14px;
+}
+
+.psum-section-header h3 {
+  margin: 0 0 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+}
+
+/* Trend bar chart */
+.psum-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.psum-bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 110px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.psum-bar-label {
+  color: var(--muted);
+  text-align: right;
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+}
+
+.psum-bar-track {
+  background: #ede9e0;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.psum-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.psum-bar-amount {
+  font-size: 12px;
+  color: var(--ink);
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+}
+
+/* Top 3 grid */
+.psum-tops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 900px) {
+  .psum-tops-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.psum-top-card {
+  padding: 16px 18px;
+}
+
+.psum-top-card h4 {
+  margin: 0 0 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+}
+
+.psum-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.psum-rank-item {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.psum-rank-num {
+  font-weight: 700;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+}
+
+.psum-rank-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.psum-rank-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.psum-rank-track {
+  background: #ede9e0;
+  border-radius: 3px;
+  height: 5px;
+}
+
+.psum-rank-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.psum-rank-fill.brand {
+  background: var(--accent-2);
+}
+
+.psum-rank-fill.product {
+  background: #3a7cb8;
+}
+
+.psum-rank-amount {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* Combinations grid */
+.psum-combos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 900px) {
+  .psum-combos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.psum-combo-card {
+  padding: 16px 18px;
+}
+
+.psum-combo-card h4 {
+  margin: 0 0 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+}
+
+.psum-combo-wrapper {
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.psum-combo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.psum-combo-table th {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid #e8e4dc;
+  position: sticky;
+  top: 0;
+  background: var(--surface-soft);
+}
+
+.psum-combo-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0eee8;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psum-combo-table td:last-child {
+  color: var(--accent);
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+}
+
+/* Provider / Brand relational detail */
+.psum-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.psum-provider-card {
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid #e8e4dc;
+  overflow: hidden;
+}
+
+.psum-provider-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+
+.psum-provider-card-header:hover {
+  background: #faf9f5;
+}
+
+.psum-provider-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.psum-provider-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  min-width: 24px;
+}
+
+.psum-provider-name {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psum-provider-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.psum-meta-chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #ede9e0;
+  color: var(--muted);
+  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.psum-meta-chip.total {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.psum-meta-chip.pay-ok {
+  background: #e6f4ec;
+  color: var(--success);
+}
+
+.psum-meta-chip.pay-pending {
+  background: #fdf3e0;
+  color: var(--warning);
+}
+
+.psum-expand-icon {
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.psum-provider-card-body {
+  padding: 0 16px 14px;
+  display: none;
+}
+
+.psum-provider-card-body.open {
+  display: block;
+}
+
+.psum-rel-section {
+  margin-top: 10px;
+}
+
+.psum-rel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Space Grotesk', sans-serif;
+  margin-bottom: 5px;
+}
+
+.psum-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.psum-tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ede9e0;
+  color: var(--ink);
+}
+
+.psum-tag.brand-tag {
+  background: #fdf3e0;
+  color: #8a5800;
+}
+
+.psum-tag.product-tag {
+  background: #e6f0fa;
+  color: #1a4d7a;
+}
+
+.psum-payment-bar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.psum-payment-track {
+  flex: 1;
+  background: #fdf3e0;
+  border-radius: 4px;
+  height: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.psum-payment-paid-bar {
+  height: 100%;
+  background: var(--success);
+  border-radius: 4px;
+}
+
+.psum-empty-msg {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}

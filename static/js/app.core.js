@@ -6,6 +6,7 @@ const state = {
   providers: [],
   products: [],
   users: [],
+  purchases: [],
   pagination: {},
 };
 
@@ -14,6 +15,7 @@ const el = {
   modulesPanel: document.getElementById('modules-panel'),
   moduleDashboard: document.getElementById('module-dashboard'),
   modulePayments: document.getElementById('module-payments'),
+  modulePurchases: document.getElementById('module-purchases'),
   moduleBrands: document.getElementById('module-brands'),
   moduleVendors: document.getElementById('module-vendors'),
   moduleProducts: document.getElementById('module-products'),
@@ -21,6 +23,7 @@ const el = {
   navButtons: document.querySelectorAll('.nav-btn'),
   navDashboard: document.getElementById('nav-dashboard'),
   navPayments: document.getElementById('nav-payments'),
+  navPurchases: document.getElementById('nav-purchases'),
   navBrands: document.getElementById('nav-brands'),
   navVendors: document.getElementById('nav-vendors'),
   navProducts: document.getElementById('nav-products'),
@@ -45,6 +48,23 @@ const el = {
   paymentsTable: document.querySelector('#payments-table tbody'),
   paymentsSelectAll: document.getElementById('payments-select-all'),
   paymentsBulkDelete: document.getElementById('payments-bulk-delete'),
+  purchaseForm: document.getElementById('purchase-form'),
+  purchaseModal: document.getElementById('purchase-modal'),
+  purchaseModalTitle: document.getElementById('purchase-modal-title'),
+  purchaseOpen: document.getElementById('purchase-open'),
+  purchaseAddItemBtn: document.getElementById('purchase-add-item-btn'),
+  purchaseItemsContainer: document.getElementById('purchase-items-container'),
+  purchaseProviderSelect: document.getElementById('purchase-provider-select'),
+  purchaseTemplateBtn: document.getElementById('purchase-template'),
+  purchaseUploadForm: document.getElementById('purchase-upload-form'),
+  purchasesTable: document.querySelector('#purchases-table tbody'),
+  purchasesSelectAll: document.getElementById('purchases-select-all'),
+  purchasesBulkDelete: document.getElementById('purchases-bulk-delete'),
+  purchasesSearch: document.getElementById('purchases-search'),
+  purchasesExport: document.getElementById('purchases-export'),
+  purchasesRefresh: document.getElementById('purchases-refresh'),
+  moduleAnalysis: document.getElementById('module-analysis'),
+  navAnalysis: document.getElementById('nav-analysis'),
   metrics: document.getElementById('metrics'),
   weeksList: document.getElementById('weeks-list'),
   providersList: document.getElementById('providers-list'),
@@ -53,6 +73,11 @@ const el = {
   ganttPaymentTypeFilter: document.getElementById('gantt-payment-type-filter'),
   ganttExportBtn: document.getElementById('gantt-export-btn'),
   dashboardPivotBody: document.getElementById('dashboard-pivot-body'),
+  providerSummaryBody: document.getElementById('provider-summary-body'),
+  providerSummarySearch: document.getElementById('provider-summary-search'),
+  providerSummaryYear: document.getElementById('provider-summary-year'),
+  providerSummaryStatus: document.getElementById('provider-summary-status'),
+  providerSummaryExport: document.getElementById('provider-summary-export'),
   filterProvider: document.getElementById('filter-provider'),
   filterWeek: document.getElementById('filter-week'),
   filterStatus: document.getElementById('filter-status'),
@@ -124,15 +149,23 @@ function setActiveModule(moduleName) {
   localStorage.setItem('pp_module', moduleName);
   el.moduleDashboard.style.display = moduleName === 'dashboard' ? 'block' : 'none';
   el.modulePayments.style.display = moduleName === 'payments' ? 'block' : 'none';
+  if (el.modulePurchases) {
+    el.modulePurchases.style.display = moduleName === 'purchases' ? 'block' : 'none';
+  }
   el.moduleBrands.style.display = moduleName === 'brands' ? 'block' : 'none';
   el.moduleVendors.style.display = moduleName === 'vendors' ? 'block' : 'none';
   el.moduleProducts.style.display = moduleName === 'products' ? 'block' : 'none';
+  if (el.moduleAnalysis) {
+    el.moduleAnalysis.style.display = moduleName === 'analysis' ? 'block' : 'none';
+  }
   if (el.moduleUsers) {
     el.moduleUsers.style.display = moduleName === 'users' ? 'block' : 'none';
   }
   el.navButtons.forEach((btn) => btn.classList.remove('active'));
   if (moduleName === 'dashboard') el.navDashboard.classList.add('active');
   if (moduleName === 'payments') el.navPayments.classList.add('active');
+  if (moduleName === 'purchases' && el.navPurchases) el.navPurchases.classList.add('active');
+  if (moduleName === 'analysis' && el.navAnalysis) el.navAnalysis.classList.add('active');
   if (moduleName === 'brands') el.navBrands.classList.add('active');
   if (moduleName === 'vendors') el.navVendors.classList.add('active');
   if (moduleName === 'products') el.navProducts.classList.add('active');
@@ -154,7 +187,7 @@ function updateUI() {
     element.style.display = isAdmin ? '' : 'none';
   });
 
-  const navAll = [el.navPayments, el.navBrands, el.navVendors, el.navProducts, el.navUsers];
+  const navAll = [el.navPayments, el.navPurchases, el.navAnalysis, el.navBrands, el.navVendors, el.navProducts, el.navUsers];
   navAll.forEach((btn) => {
     if (!btn) return;
     if (isAdmin) {
@@ -395,17 +428,21 @@ function populateProviderSelect(selectEl) {
   if (current) selectEl.value = current;
 }
 
-function populateBrandSelect() {
-  if (!el.brandSelect) return;
-  const current = el.brandSelect.value;
-  el.brandSelect.innerHTML = '<option value="">Sin marca</option>';
+function populateBrandSelectFor(selectEl) {
+  if (!selectEl) return;
+  const current = selectEl.value;
+  selectEl.innerHTML = '<option value="">Sin marca</option>';
   state.brands.forEach((brand) => {
     const option = document.createElement('option');
     option.value = brand.id;
     option.textContent = brand.data_json.name;
-    el.brandSelect.appendChild(option);
+    selectEl.appendChild(option);
   });
-  if (current) el.brandSelect.value = current;
+  if (current) selectEl.value = current;
+}
+
+function populateBrandSelect() {
+  populateBrandSelectFor(el.brandSelect);
 }
 
 function populateProductSelect(selectEl) {
@@ -419,6 +456,7 @@ function populateProductSelect(selectEl) {
     selectEl.appendChild(option);
   });
   if (current) selectEl.value = current;
+  selectEl.dispatchEvent(new Event('pp:options-updated'));
 }
 
 function initProductCombobox(row, selectEl) {
@@ -489,6 +527,7 @@ function initProductCombobox(row, selectEl) {
     const btn = event.target.closest('.product-combobox-option');
     if (!btn) return;
     selectEl.value = btn.dataset.value;
+    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
     syncInput();
     closeList();
   });
@@ -498,6 +537,19 @@ function initProductCombobox(row, selectEl) {
   });
 
   selectEl.addEventListener('change', syncInput);
+  selectEl.addEventListener('pp:options-updated', () => {
+    const wasOpen = !list.hidden;
+    buildList();
+    syncInput();
+    if (wasOpen) {
+      const result = filterList();
+      if (result.visible > 0 && result.term) {
+        openList();
+      } else {
+        closeList();
+      }
+    }
+  });
 
   wrapper.dataset.bound = 'true';
 }

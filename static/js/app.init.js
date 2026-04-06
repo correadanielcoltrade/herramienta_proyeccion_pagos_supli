@@ -35,6 +35,18 @@ if (el.uploadForm) {
 if (el.paymentTemplateBtn) {
   el.paymentTemplateBtn.addEventListener('click', () => downloadFile('/templates/payments', 'template_pagos.xlsx'));
 }
+if (el.purchaseForm) {
+  el.purchaseForm.addEventListener('submit', handleCreatePurchase);
+}
+if (el.purchaseUploadForm) {
+  el.purchaseUploadForm.addEventListener('submit', handlePurchaseUpload);
+}
+if (el.purchaseTemplateBtn) {
+  el.purchaseTemplateBtn.addEventListener('click', () => downloadFile('/templates/purchases', 'template_compras.xlsx'));
+}
+if (el.purchasesExport) {
+  el.purchasesExport.addEventListener('click', () => downloadFile('/exports/purchases', 'compras.xlsx'));
+}
 if (el.ganttExportBtn) {
   el.ganttExportBtn.addEventListener('click', () => {
     const week = el.ganttExportWeek ? el.ganttExportWeek.value : '';
@@ -62,6 +74,24 @@ if (el.paymentOpen && el.paymentModal) {
     clearOrdersForm();
     openModal(el.paymentModal);
   });
+}
+if (el.purchaseOpen && el.purchaseModal) {
+  el.purchaseOpen.addEventListener('click', () => {
+    if (el.purchaseForm) {
+      clearPurchaseForm();
+      if (el.purchaseProviderSelect) {
+        populateProviderSelect(el.purchaseProviderSelect);
+      }
+    }
+    if (el.purchaseModalTitle) {
+      el.purchaseModalTitle.textContent = 'Nueva compra';
+    }
+    openModal(el.purchaseModal);
+  });
+}
+
+if (el.purchaseAddItemBtn) {
+  el.purchaseAddItemBtn.addEventListener('click', () => addPurchaseItemRow());
 }
 
 if (el.addOrderBtn) {
@@ -165,9 +195,17 @@ if (el.paymentsBulkDelete) {
     handleBulkDelete('/payments/bulk-delete', el.paymentsTable, el.paymentsSelectAll, el.paymentsBulkDelete, loadPayments)
   );
 }
+if (el.purchasesBulkDelete) {
+  el.purchasesBulkDelete.addEventListener('click', () =>
+    handleBulkDelete('/purchases/bulk-delete', el.purchasesTable, el.purchasesSelectAll, el.purchasesBulkDelete, loadPurchases)
+  );
+}
 }
 
 el.refreshBtn.addEventListener('click', loadDashboard);
+if (el.purchasesRefresh) {
+  el.purchasesRefresh.addEventListener('click', loadPurchases);
+}
 el.filterProvider.addEventListener('change', loadPayments);
 el.filterWeek.addEventListener('change', loadPayments);
 el.filterStatus.addEventListener('change', loadPayments);
@@ -181,6 +219,15 @@ el.logoutBtn.addEventListener('click', () => {
 
 el.navDashboard.addEventListener('click', () => { setActiveModule('dashboard'); loadDashboard(); });
 el.navPayments.addEventListener('click', () => setActiveModule('payments'));
+if (el.navPurchases) {
+  el.navPurchases.addEventListener('click', () => { setActiveModule('purchases'); loadPurchases(); });
+}
+if (el.navAnalysis) {
+  el.navAnalysis.addEventListener('click', () => {
+    setActiveModule('analysis');
+    if (typeof loadAnalysis === 'function') loadAnalysis();
+  });
+}
 el.navBrands.addEventListener('click', () => setActiveModule('brands'));
 el.navVendors.addEventListener('click', () => setActiveModule('vendors'));
 el.navProducts.addEventListener('click', () => setActiveModule('products'));
@@ -197,6 +244,7 @@ bindCatalogFilters(el.vendorSearch, el.vendorFilterCategory, 'vendors-table');
 bindCatalogFilters(el.productSearch, el.productFilterCategory, 'products-table');
 bindTableSearch(el.userSearch, 'users-table');
 bindTableSearch(el.paymentSearch, 'payments-table');
+bindTableSearch(el.purchasesSearch, 'purchases-table');
 
 if (el.brandExport) {
   el.brandExport.addEventListener('click', () => {
@@ -259,10 +307,12 @@ bindModalDismiss(el.brandModal);
 bindModalDismiss(el.vendorModal);
 bindModalDismiss(el.productModal);
 bindModalDismiss(el.paymentModal);
+bindModalDismiss(el.purchaseModal);
 bindModalDismiss(el.userEditModal);
 
 updateUI();
 clearOrdersForm();
+clearPurchaseForm();
 if (state.token) {
   loadAll().catch(() => {
     setSession('', '');

@@ -128,7 +128,7 @@ label {
   color: var(--muted);
 }
 
-input, select {
+input, select, textarea {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #d8d4cc;

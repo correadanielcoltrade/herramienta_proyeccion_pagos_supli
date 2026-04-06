@@ -1,0 +1,292 @@
+/* ===================== ANALYSIS MODULE ===================== */
+
+.an-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* ---- Filter bar ---- */
+.an-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(31,31,31,0.06);
+}
+
+/* Row 1: shortcuts de fecha */
+.an-date-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.an-shortcut-btn {
+  border: 1px solid #d8d4cc;
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.an-shortcut-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.an-shortcut-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Row 2: inputs de fecha + selectores */
+.an-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.an-filter-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+}
+
+.an-date-input {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #d8d4cc;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: 'Sora', sans-serif;
+  width: 140px;
+}
+
+.an-date-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.an-filter-sep {
+  width: 1px;
+  height: 24px;
+  background: #e0dcd4;
+  margin: 0 4px;
+}
+
+.an-filter-select {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #d8d4cc;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 140px;
+}
+
+/* Row 3: rango activo */
+.an-active-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  padding: 4px 12px;
+  background: #e6f4ec;
+  color: var(--success);
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+/* ---- Category badges ---- */
+.an-cat-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.an-cat-badge.cat-alta  { background: #d4f0e3; color: #1a6644; }
+.an-cat-badge.cat-media { background: #fdf0d0; color: #8a5a00; }
+.an-cat-badge.cat-baja  { background: #fde4e4; color: #8f2020; }
+.an-cat-badge.cat-normal{ background: #ede9e0; color: #5a5550; }
+
+/* ---- Rank name row (name + badge inline) ---- */
+.an-rank-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ---- Category analysis grid ---- */
+.an-cat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Inline meta counts shown in the always-visible header */
+.an-cat-meta-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  flex-wrap: wrap;
+}
+
+/* Bar inside the collapsed body */
+.an-cat-bar-wrap {
+  margin-bottom: 10px;
+}
+
+.an-cat-bar-track {
+  height: 8px;
+  background: #ede9e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.an-cat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  min-width: 2px;
+  transition: width 0.4s ease;
+}
+
+.an-cat-bar-fill.cat-alta  { background: #2f8f5b; }
+.an-cat-bar-fill.cat-media { background: #d38c1a; }
+.an-cat-bar-fill.cat-baja  { background: #b23a48; }
+.an-cat-bar-fill.cat-normal{ background: #9c9590; }
+
+/* ---- Category matrix ---- */
+.an-matrix-wrap {
+  overflow-x: auto;
+}
+
+.an-matrix-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 480px;
+}
+
+.an-matrix-table th {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  padding: 8px 12px;
+  text-align: center;
+  color: var(--muted);
+  border-bottom: 2px solid #e8e4dc;
+}
+
+.an-matrix-corner {
+  text-align: left !important;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.an-matrix-row-header {
+  padding: 10px 12px;
+  border-right: 2px solid #e8e4dc;
+  background: var(--surface);
+}
+
+.an-matrix-cell {
+  padding: 10px 14px;
+  text-align: center;
+  border: 1px solid #f0eee8;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--accent) calc(var(--intensity, 0) * 7%), var(--surface));
+  min-width: 110px;
+}
+
+.an-matrix-cell:hover {
+  background: color-mix(in srgb, var(--accent) calc(var(--intensity, 0) * 7% + 5%), var(--surface));
+}
+
+.an-matrix-val {
+  display: block;
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.an-matrix-pct {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ---- Show more button ---- */
+.an-show-more-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px dashed #c8c4bc;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s ease;
+}
+
+.an-show-more-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #f0faf7;
+}
+
+/* Row wrapper inside tables for the show-more button */
+.an-show-more-row td {
+  padding: 4px 8px !important;
+  border: none !important;
+}
+
+/* ---- Share bar inside expanded provider cards ---- */
+.an-share-bar {
+  height: 6px;
+  background: #ede9e0;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.an-share-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.an-share-fill.brand   { background: var(--accent-2); }
+.an-share-fill.product { background: #3a7cb8; }

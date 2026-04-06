@@ -16,9 +16,11 @@ def create_app():
     from blueprint.dashboard import dashboard_bp
     from blueprint.catalogs import catalogs_bp
     from blueprint.users import users_bp
+    from blueprint.purchases import purchases_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(payments_bp)
+    app.register_blueprint(purchases_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(catalogs_bp)
     app.register_blueprint(users_bp)

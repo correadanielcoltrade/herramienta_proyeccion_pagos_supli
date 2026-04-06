@@ -19,6 +19,7 @@ except Exception:
 DATA_FILES = {
     'pp_users': 'pp_users.json',
     'pp_payments': 'pp_payments.json',
+    'pp_purchases': 'pp_purchases.json',
     'pp_providers': 'pp_providers.json',
     'pp_products': 'pp_products.json',
     'pp_brands': 'pp_brands.json',
@@ -28,6 +29,7 @@ DATA_FILES = {
 DB_TABLES = {
     'pp_users': 'users',
     'pp_payments': 'payments',
+    'pp_purchases': 'purchases',
     'pp_providers': 'providers',
     'pp_products': 'products',
     'pp_brands': 'brands',
@@ -432,6 +434,7 @@ def migrate_old_tables_to_new():
     old_names = {
         'pp_users':     f'{prefix}pp_users',
         'pp_payments':  f'{prefix}pp_payments',
+        'pp_purchases': f'{prefix}pp_purchases',
         'pp_providers': f'{prefix}pp_providers',
         'pp_products':  f'{prefix}pp_products',
         'pp_brands':    f'{prefix}pp_brands',

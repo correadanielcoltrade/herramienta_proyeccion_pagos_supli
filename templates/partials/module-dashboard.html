@@ -54,4 +54,54 @@
       </table>
     </div>
   </div>
+  <div class="panel soft provider-summary-panel">
+    <div class="table-header">
+      <div>
+        <h3>Resumen por Proveedor</h3>
+        <p class="helper-text">Saldo pendiente, pagos realizados y proximo pago por proveedor.</p>
+      </div>
+    </div>
+    <div class="payments-toolbar summary-toolbar">
+      <div class="inline-group">
+        <span class="inline-label">Filtros</span>
+        <div class="inline-controls">
+          <select id="provider-summary-year" class="select">
+            <option value="">Todos los anos</option>
+          </select>
+          <select id="provider-summary-status" class="select">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Pagado">Pagado</option>
+          </select>
+        </div>
+      </div>
+      <div class="inline-group">
+        <span class="inline-label">Buscar</span>
+        <div class="inline-controls">
+          <input type="search" id="provider-summary-search" class="table-search" placeholder="Buscar proveedor">
+        </div>
+      </div>
+      <div class="inline-group">
+        <span class="inline-label">Exportar</span>
+        <div class="inline-controls">
+          <button type="button" class="btn outline small" id="provider-summary-export">Descargar</button>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="provider-summary-table">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Proximo pago</th>
+            <th>Pendiente</th>
+            <th>Pagado</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="provider-summary-body"></tbody>
+      </table>
+    </div>
+  </div>
 </section>

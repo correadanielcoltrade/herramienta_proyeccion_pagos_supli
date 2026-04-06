@@ -232,6 +232,70 @@
   </div>
 </div>
 
+<div class="modal" id="purchase-modal" aria-hidden="true">
+  <div class="modal-content modal-xl purchase-modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="purchase-modal-title">Nueva compra</h3>
+        <p class="modal-subtitle">Registra una compra con detalle de productos.</p>
+      </div>
+      <button type="button" class="btn ghost modal-close" data-modal="purchase-modal">Cerrar</button>
+    </div>
+    <form id="purchase-form" class="form purchase-form">
+      <input type="hidden" name="id">
+      <div class="modal-section">
+        <h4 class="modal-section-title">Datos de la compra</h4>
+        <div class="modal-grid modal-grid-wide">
+          <label class="field">
+            <span class="field-label">Proveedor</span>
+            <select name="provider_id" id="purchase-provider-select" required>
+              <option value="">Selecciona proveedor</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Orden de compra</span>
+            <input type="text" name="order" placeholder="Ej: OC-2026-001" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Fecha</span>
+            <input type="date" name="date" required>
+          </label>
+          <label class="field field-full">
+            <span class="field-label">Observaciones</span>
+            <textarea name="observations" rows="2" placeholder="Notas adicionales"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-header">
+          <h4 class="modal-section-title">Productos comprados</h4>
+          <button type="button" class="btn outline small" id="purchase-add-item-btn">+ Agregar producto</button>
+        </div>
+        <div class="purchase-items-head">
+          <span>Producto</span>
+          <span>Marca</span>
+          <span>SKU</span>
+          <span>Cantidad</span>
+          <span>Precio Unitario</span>
+          <span>Total</span>
+          <span></span>
+        </div>
+        <div id="purchase-items-container"></div>
+        <div class="purchase-total-row">
+          <span>Total compra</span>
+          <span id="purchase-grand-total">$ 0</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">Guardar compra</button>
+        <button type="button" class="btn ghost modal-cancel" data-modal="purchase-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal" id="user-edit-modal" aria-hidden="true">
   <div class="modal-content">
     <div class="modal-header">

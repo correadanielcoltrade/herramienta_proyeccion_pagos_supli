@@ -92,8 +92,9 @@ async function loadGantt() {
     if (yearSel) {
       yearSel.addEventListener('change', () => {
         const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
-        if (ganttData) renderGantt(ganttData, yearSel.value, pt);
-        renderDashboardPivot(allPayments, yearSel.value, pt);
+        const pvt = el.ganttProviderTypeFilter ? el.ganttProviderTypeFilter.value : '';
+        if (ganttData) renderGantt(ganttData, yearSel.value, pt, pvt);
+        renderDashboardPivot(allPayments, yearSel.value, pt, pvt);
       });
       ganttYearFilterBound = true;
     }
@@ -102,14 +103,26 @@ async function loadGantt() {
     el.ganttPaymentTypeFilter.addEventListener('change', () => {
       const yearSel = document.getElementById('gantt-year-filter');
       const yr = yearSel ? yearSel.value : '';
-      if (ganttData) renderGantt(ganttData, yr, el.ganttPaymentTypeFilter.value);
-      renderDashboardPivot(allPayments, yr, el.ganttPaymentTypeFilter.value);
+      const pvt = el.ganttProviderTypeFilter ? el.ganttProviderTypeFilter.value : '';
+      if (ganttData) renderGantt(ganttData, yr, el.ganttPaymentTypeFilter.value, pvt);
+      renderDashboardPivot(allPayments, yr, el.ganttPaymentTypeFilter.value, pvt);
     });
     ganttPaymentFilterBound = true;
   }
+  if (!ganttProviderTypeFilterBound && el.ganttProviderTypeFilter) {
+    el.ganttProviderTypeFilter.addEventListener('change', () => {
+      const yearSel = document.getElementById('gantt-year-filter');
+      const yr = yearSel ? yearSel.value : '';
+      const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
+      if (ganttData) renderGantt(ganttData, yr, pt, el.ganttProviderTypeFilter.value);
+      renderDashboardPivot(allPayments, yr, pt, el.ganttProviderTypeFilter.value);
+    });
+    ganttProviderTypeFilterBound = true;
+  }
   const yearSel = document.getElementById('gantt-year-filter');
   const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
-  renderGantt(ganttData, yearSel ? yearSel.value : null, pt);
+  const pvt = el.ganttProviderTypeFilter ? el.ganttProviderTypeFilter.value : '';
+  renderGantt(ganttData, yearSel ? yearSel.value : null, pt, pvt);
 }
 
 async function updateGanttStatus({ providerId, week, weekYear, status }) {
@@ -147,6 +160,8 @@ let ganttData = null;
 let allPayments = [];
 let ganttYearFilterBound = false;
 let ganttPaymentFilterBound = false;
+let ganttProviderTypeFilterBound = false;
+let pivotProviderTypeFilterBound = false;
 let providerSummaryFiltersBound = false;
 let providerSummarySnapshot = { rows: [], totals: { total: 0, paid_total: 0, pending_total: 0 } };
 
@@ -326,13 +341,23 @@ async function loadDashboardPivot() {
   _populatePaymentTypeFilter(allPayments);
   const yearSel = document.getElementById('gantt-year-filter');
   const pt = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
-  renderDashboardPivot(allPayments, yearSel ? yearSel.value : null, pt);
+  const pvt = el.ganttProviderTypeFilter ? el.ganttProviderTypeFilter.value : '';
+  renderDashboardPivot(allPayments, yearSel ? yearSel.value : null, pt, pvt);
+  if (!pivotProviderTypeFilterBound && el.pivotProviderTypeFilter) {
+    el.pivotProviderTypeFilter.addEventListener('change', () => {
+      const ySel = document.getElementById('gantt-year-filter');
+      const yr = ySel ? ySel.value : '';
+      const pType = el.ganttPaymentTypeFilter ? el.ganttPaymentTypeFilter.value : '';
+      renderDashboardPivot(allPayments, yr, pType, el.pivotProviderTypeFilter.value);
+    });
+    pivotProviderTypeFilterBound = true;
+  }
   _populateProviderSummaryYearFilter(allPayments);
   bindProviderSummaryFilters();
   renderProviderSummary(allPayments);
 }
 
-function renderDashboardPivot(payments, yearFilter, paymentTypeFilter) {
+function renderDashboardPivot(payments, yearFilter, paymentTypeFilter, providerTypeFilter) {
   if (!el.dashboardPivotBody) return;
   el.dashboardPivotBody.innerHTML = '';
 
@@ -349,10 +374,23 @@ function renderDashboardPivot(payments, yearFilter, paymentTypeFilter) {
     });
   }
 
+  if (providerTypeFilter) {
+    payments = payments.filter((p) => {
+      const data = p.data_json || {};
+      const providerId = data.provider_id;
+      if (providerId && state.providers && Array.isArray(state.providers)) {
+        const provider = state.providers.find((prov) => String(prov.id) === String(providerId));
+        const providerType = provider && provider.data_json ? provider.data_json.type : 'Comercial';
+        return providerType === providerTypeFilter;
+      }
+      return false;
+    });
+  }
+
   if (!payments.length) {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td colspan="6" class="pivot-empty">Sin datos para la tabla.</td>
+      <td colspan="7" class="pivot-empty">Sin datos para la tabla.</td>
     `;
     el.dashboardPivotBody.appendChild(row);
     return;
@@ -655,6 +693,9 @@ function bindProviderSummaryFilters() {
   if (el.providerSummaryStatus) {
     el.providerSummaryStatus.addEventListener('change', () => renderProviderSummary(allPayments));
   }
+  if (el.providerSummaryType) {
+    el.providerSummaryType.addEventListener('change', () => renderProviderSummary(allPayments));
+  }
   if (el.providerSummaryExport) {
     el.providerSummaryExport.addEventListener('click', () => exportProviderSummary(allPayments));
   }
@@ -714,8 +755,19 @@ function _buildProviderSummaryRows(payments) {
   const term = (el.providerSummarySearch && el.providerSummarySearch.value || '').trim().toLowerCase();
   const yearFilter = el.providerSummaryYear ? el.providerSummaryYear.value : '';
   const statusFilter = el.providerSummaryStatus ? el.providerSummaryStatus.value : '';
+  const typeFilter = el.providerSummaryType ? el.providerSummaryType.value : '';
 
   const providers = new Map();
+  const providerTypeMap = new Map();
+
+  // Build provider type map from state.providers
+  if (state.providers && Array.isArray(state.providers)) {
+    state.providers.forEach((prov) => {
+      const provId = prov.id;
+      const provType = (prov.data_json && prov.data_json.type) || 'Comercial';
+      providerTypeMap.set(String(provId), provType);
+    });
+  }
 
   payments.forEach((payment) => {
     const data = payment.data_json || {};
@@ -727,9 +779,11 @@ function _buildProviderSummaryRows(payments) {
     const providerName = (data.provider_name || 'Sin proveedor').trim() || 'Sin proveedor';
     const providerKey = data.provider_id ? `id:${data.provider_id}` : `name:${providerName}`;
     if (!providers.has(providerKey)) {
+      const providerType = data.provider_id ? providerTypeMap.get(String(data.provider_id)) || 'Comercial' : 'Comercial';
       providers.set(providerKey, {
         provider_name: providerName,
         provider_id: data.provider_id || null,
+        provider_type: providerType,
         total: 0,
         paid_total: 0,
         pending_total: 0,
@@ -760,6 +814,9 @@ function _buildProviderSummaryRows(payments) {
   if (term) {
     rows = rows.filter((row) => row.provider_name.toLowerCase().includes(term));
   }
+  if (typeFilter) {
+    rows = rows.filter((row) => row.provider_type === typeFilter);
+  }
   rows.sort((a, b) => {
     if (b.pending_total !== a.pending_total) return b.pending_total - a.pending_total;
     if (b.total !== a.total) return b.total - a.total;
@@ -784,7 +841,7 @@ function renderProviderSummary(payments) {
   el.providerSummaryBody.innerHTML = '';
   if (!result.rows.length) {
     const empty = document.createElement('tr');
-    empty.innerHTML = '<td colspan="6" class="provider-summary-empty">Sin datos para el resumen.</td>';
+    empty.innerHTML = '<td colspan="7" class="provider-summary-empty">Sin datos para el resumen.</td>';
     el.providerSummaryBody.appendChild(empty);
     return;
   }
@@ -794,6 +851,7 @@ function renderProviderSummary(payments) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.provider_name}</td>
+      <td>${row.provider_type || 'Comercial'}</td>
       <td>${row.next_due_label || '-'}</td>
       <td class="provider-summary-amount is-pending">${formatCurrency(row.pending_total)}</td>
       <td class="provider-summary-amount is-paid">${formatCurrency(row.paid_total)}</td>
@@ -806,7 +864,7 @@ function renderProviderSummary(payments) {
   const totalRow = document.createElement('tr');
   totalRow.className = 'provider-summary-total';
   totalRow.innerHTML = `
-    <td colspan="2">Total general</td>
+    <td colspan="3">Total general</td>
     <td class="provider-summary-amount is-pending">${formatCurrency(result.totals.pending_total)}</td>
     <td class="provider-summary-amount is-paid">${formatCurrency(result.totals.paid_total)}</td>
     <td class="provider-summary-amount">${formatCurrency(result.totals.total)}</td>
@@ -817,9 +875,10 @@ function renderProviderSummary(payments) {
 
 function exportProviderSummary(payments) {
   const { rows, totals } = _buildProviderSummaryRows(payments);
-  const headers = ['Proveedor', 'Proximo pago', 'Pendiente', 'Pagado', 'Total', 'Estado'];
+  const headers = ['Proveedor', 'Tipo', 'Proximo pago', 'Pendiente', 'Pagado', 'Total', 'Estado'];
   const dataRows = rows.map((row) => [
     row.provider_name,
+    row.provider_type || 'Comercial',
     row.next_due_label || '-',
     row.pending_total,
     row.paid_total,
@@ -828,6 +887,7 @@ function exportProviderSummary(payments) {
   ]);
   dataRows.push([
     'Total general',
+    '-',
     '-',
     totals.pending_total,
     totals.paid_total,
@@ -895,14 +955,18 @@ function _formatGanttValue(amount) {
   return '$ ' + Math.round(amount).toLocaleString('es-CO');
 }
 
-function renderGantt(gantt, yearFilter, paymentTypeFilter) {
+function renderGantt(gantt, yearFilter, paymentTypeFilter, providerTypeFilter) {
   if (!el.ganttChart) return;
   let weeks = (gantt && gantt.weeks) || [];
-  const vendors = (gantt && gantt.vendors) || [];
+  let vendors = (gantt && gantt.vendors) || [];
 
   if (yearFilter) {
     const yearNum = Number(yearFilter);
     weeks = weeks.filter((w) => w.year === yearNum);
+  }
+
+  if (providerTypeFilter) {
+    vendors = vendors.filter((v) => v.vendor_type === providerTypeFilter);
   }
 
   const weeklyTotals = {};

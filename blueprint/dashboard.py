@@ -97,7 +97,8 @@ def dashboard_providers():
         return jsonify(cached), 200
 
     payments = load_records('pp_payments')
-    providers = build_provider_summary(payments)
+    provider_records = load_records('pp_providers')
+    providers = build_provider_summary(payments, provider_records=provider_records)
     set_cached(cache_key, providers, ttl=30)
     return jsonify(providers), 200
 

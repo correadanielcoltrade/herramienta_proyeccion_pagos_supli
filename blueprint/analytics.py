@@ -64,10 +64,15 @@ def build_week_summary(payments):
     return weeks
 
 
-def build_provider_summary(payments):
+def build_provider_summary(payments, provider_records=None):
+    provider_index = {}
+    if provider_records:
+        provider_index = {str(p.get('id')): p for p in provider_records}
+
     provider_map = defaultdict(lambda: {
         'provider_id': None,
         'provider_name': None,
+        'provider_type': 'Comercial',
         'total': 0.0,
         'paid_total': 0.0,
         'pending_total': 0.0,
@@ -88,6 +93,15 @@ def build_provider_summary(payments):
             entry['pending_total'] += amount
 
     providers = list(provider_map.values())
+
+    # Enrich with provider type from provider_records
+    for provider in providers:
+        provider_id = provider.get('provider_id')
+        if provider_id and str(provider_id) in provider_index:
+            provider_record = provider_index[str(provider_id)]
+            provider_type = provider_record.get('data_json', {}).get('type', 'Comercial')
+            provider['provider_type'] = provider_type
+
     providers.sort(key=lambda x: x['total'], reverse=True)
     cumulative = 0.0
     for p in providers:
@@ -152,15 +166,19 @@ def build_gantt_data_with_refs(payments, providers=None):
         vendor_category = _normalize_category(
             provider_data.get('category') or data.get('provider_category')
         )
+        vendor_type = provider_data.get('type', 'Comercial') if provider else 'Comercial'
         key = str(vendor_id) if vendor_id is not None else f'name:{vendor_name}'
         vendor_entry = vendor_map.setdefault(key, {
             'vendor_id': vendor_id,
             'vendor_name': vendor_name,
             'vendor_category': vendor_category,
+            'vendor_type': vendor_type,
             'weeks': {},
         })
         if not vendor_entry.get('vendor_category'):
             vendor_entry['vendor_category'] = vendor_category
+        if not vendor_entry.get('vendor_type'):
+            vendor_entry['vendor_type'] = vendor_type
 
         cell = vendor_entry['weeks'].setdefault(week_key, {
             'total': 0.0,

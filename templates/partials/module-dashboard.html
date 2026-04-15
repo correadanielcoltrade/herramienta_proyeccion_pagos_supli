@@ -19,6 +19,11 @@
           <select id="gantt-payment-type-filter" class="select">
             <option value="">Todos los tipos</option>
           </select>
+          <select id="gantt-provider-type-filter" class="select">
+            <option value="">Todos los tipos de proveedor</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Administrativo">Administrativo</option>
+          </select>
           <select id="gantt-export-week" class="select">
             <option value="">Todas las semanas</option>
           </select>
@@ -36,6 +41,18 @@
       <div>
         <h3>Resumen de Proyección de Pagos</h3>
         <p class="helper-text">Desglose por semana, proveedor, tipo de pago y OC/Embarques con totales.</p>
+      </div>
+    </div>
+    <div class="payments-toolbar pivot-toolbar">
+      <div class="inline-group">
+        <span class="inline-label">Filtros</span>
+        <div class="inline-controls">
+          <select id="pivot-provider-type-filter" class="select">
+            <option value="">Todos los tipos de proveedor</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Administrativo">Administrativo</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="table-wrapper pivot-wrapper">
@@ -73,6 +90,11 @@
             <option value="Pendiente">Pendiente</option>
             <option value="Pagado">Pagado</option>
           </select>
+          <select id="provider-summary-type" class="select">
+            <option value="">Todos los tipos</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Administrativo">Administrativo</option>
+          </select>
         </div>
       </div>
       <div class="inline-group">
@@ -93,6 +115,7 @@
         <thead>
           <tr>
             <th>Proveedor</th>
+            <th>Tipo</th>
             <th>Proximo pago</th>
             <th>Pendiente</th>
             <th>Pagado</th>

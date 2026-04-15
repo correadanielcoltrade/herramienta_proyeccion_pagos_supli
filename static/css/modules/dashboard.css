@@ -152,8 +152,21 @@
   z-index: 1;
 }
 
+.gantt-vendor.gantt-sticky {
+  z-index: 10;
+}
+
 .gantt-head.gantt-sticky {
-  z-index: 2;
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 20;
+}
+
+.gantt-head:not(.gantt-sticky) {
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .gantt-cell {

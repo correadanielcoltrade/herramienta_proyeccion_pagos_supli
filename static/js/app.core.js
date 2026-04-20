@@ -244,7 +244,28 @@ async function apiFetch(path, options = {}) {
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-  const response = await fetch(path, { ...options, headers, cache: 'no-store' });
+  let response = await fetch(path, { ...options, headers, cache: 'no-store' });
+
+  if (response.status === 401 && state.token && path !== '/refresh-token') {
+    try {
+      const refreshRes = await fetch('/refresh-token', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.token}` },
+        cache: 'no-store'
+      });
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        setSession(refreshData.token, refreshData.role);
+        headers['Authorization'] = `Bearer ${refreshData.token}`;
+        response = await fetch(path, { ...options, headers, cache: 'no-store' });
+      } else {
+        setSession('', '');
+      }
+    } catch (err) {
+      setSession('', '');
+    }
+  }
+
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     const message = data.error || 'Error en la solicitud';

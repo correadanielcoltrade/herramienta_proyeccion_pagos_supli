@@ -205,3 +205,16 @@ def reset_password():
     save_records('pp_users', users)
 
     return jsonify({'message': 'Password restablecida'}), 200
+
+
+@auth_bp.route('/refresh-token', methods=['POST'])
+@auth_required()
+def refresh_token():
+    user_id = request.user.get('id')
+    users = load_records('pp_users')
+    user = _find_user_by_id(users, user_id)
+    if not user:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    token = create_token(user)
+    return jsonify({'token': token, 'role': user['data_json'].get('role', 'USER')}), 200

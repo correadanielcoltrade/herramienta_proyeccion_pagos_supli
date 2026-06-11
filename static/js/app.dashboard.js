@@ -1112,6 +1112,24 @@ function renderGantt(gantt, yearFilter, paymentTypeFilter, providerTypeFilter) {
   el.ganttChart.innerHTML = '';
   el.ganttChart.appendChild(grid);
   bindGanttTooltip(grid);
+  fixGanttStickyColumn();
+}
+
+function fixGanttStickyColumn() {
+  const wrapper = el.ganttChart?.parentElement;
+  if (!wrapper) return;
+
+  const stickyElements = wrapper.querySelectorAll('.gantt-sticky');
+  if (!stickyElements.length) return;
+
+  const container = wrapper.querySelector('[class*="gantt-wrapper"]') || wrapper;
+
+  container.addEventListener('scroll', () => {
+    const scrollLeft = container.scrollLeft;
+    stickyElements.forEach((el) => {
+      el.style.transform = `translateX(${scrollLeft}px)`;
+    });
+  }, { passive: true });
 }
 
 function openEditPaymentModal(payment) {

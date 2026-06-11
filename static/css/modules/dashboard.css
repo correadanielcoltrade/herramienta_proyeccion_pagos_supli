@@ -149,18 +149,25 @@
 .gantt-sticky {
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 9999;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  flex-shrink: 0;
 }
 
 .gantt-vendor.gantt-sticky {
-  z-index: 100;
+  z-index: 9999;
 }
 
 .gantt-head.gantt-sticky {
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 20;
+  z-index: 9999;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
 }
 
 .gantt-head:not(.gantt-sticky) {

@@ -124,7 +124,8 @@
 
 .gantt-grid {
   display: grid;
-  min-width: 720px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .gantt-head,

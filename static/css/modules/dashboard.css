@@ -116,9 +116,10 @@
 .gantt-wrapper {
   border: 1px solid #eee8dc;
   border-radius: 14px;
-  overflow: auto;
   max-height: min(70vh, 680px);
   background: #fff;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .gantt-grid {
@@ -139,6 +140,9 @@
   background: #f6f1e7;
   font-weight: 600;
   color: #4b443b;
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .gantt-vendor {
@@ -149,31 +153,21 @@
 .gantt-sticky {
   position: sticky;
   left: 0;
-  z-index: 9999;
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
-  flex-shrink: 0;
+  z-index: 10;
+  background: #fbfaf6;
 }
 
 .gantt-vendor.gantt-sticky {
-  z-index: 9999;
+  z-index: 10;
+  background: #fbfaf6;
 }
 
 .gantt-head.gantt-sticky {
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 9999;
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
-}
-
-.gantt-head:not(.gantt-sticky) {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  z-index: 15;
+  background: #f6f1e7;
 }
 
 .gantt-cell {

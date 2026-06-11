@@ -955,6 +955,30 @@ function _formatGanttValue(amount) {
   return '$ ' + Math.round(amount).toLocaleString('es-CO');
 }
 
+const GANTT_MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+// Devuelve el lunes de una semana ISO (mismo criterio que isocalendar() en el backend)
+function _isoWeekMonday(year, week) {
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7; // domingo = 7
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
+  const monday = new Date(week1Monday);
+  monday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+  return monday;
+}
+
+// Etiqueta de mes para una semana ISO; si la semana cruza de mes muestra ambos (ej. "Jun/Jul")
+function _ganttWeekMonthLabel(year, week) {
+  if (!year || !week) return '';
+  const monday = _isoWeekMonday(Number(year), Number(week));
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  const startMonth = GANTT_MONTH_NAMES[monday.getUTCMonth()];
+  const endMonth = GANTT_MONTH_NAMES[sunday.getUTCMonth()];
+  return startMonth === endMonth ? startMonth : `${startMonth}/${endMonth}`;
+}
+
 function renderGantt(gantt, yearFilter, paymentTypeFilter, providerTypeFilter) {
   if (!el.ganttChart) return;
   let weeks = (gantt && gantt.weeks) || [];
@@ -997,6 +1021,13 @@ function renderGantt(gantt, yearFilter, paymentTypeFilter, providerTypeFilter) {
       weekYear.className = 'gantt-head-weekyear';
       weekYear.textContent = `(${weekObj.year})`;
       cell.appendChild(weekYear);
+      const monthLabel = _ganttWeekMonthLabel(weekObj.year, weekObj.week);
+      if (monthLabel) {
+        const weekMonth = document.createElement('span');
+        weekMonth.className = 'gantt-head-weekmonth';
+        weekMonth.textContent = monthLabel;
+        cell.appendChild(weekMonth);
+      }
     }
     grid.appendChild(cell);
     weeklyTotals[weekObj.key] = 0;
@@ -1112,24 +1143,6 @@ function renderGantt(gantt, yearFilter, paymentTypeFilter, providerTypeFilter) {
   el.ganttChart.innerHTML = '';
   el.ganttChart.appendChild(grid);
   bindGanttTooltip(grid);
-  fixGanttStickyColumn();
-}
-
-function fixGanttStickyColumn() {
-  const wrapper = el.ganttChart?.parentElement;
-  if (!wrapper) return;
-
-  const stickyElements = wrapper.querySelectorAll('.gantt-sticky');
-  if (!stickyElements.length) return;
-
-  const container = wrapper.querySelector('[class*="gantt-wrapper"]') || wrapper;
-
-  container.addEventListener('scroll', () => {
-    const scrollLeft = container.scrollLeft;
-    stickyElements.forEach((el) => {
-      el.style.transform = `translateX(${scrollLeft}px)`;
-    });
-  }, { passive: true });
 }
 
 function openEditPaymentModal(payment) {
